@@ -3,7 +3,8 @@
 /* includes typedefs, #defines, math types and operations */
 
 // NOTE: here are some ways in which these math operations can be slow:
-// - too many indirections could lead to failed inlining by compilers
+// - too many indirections could lead to failed inlining by compilers (we could
+//   use an always_inline attribute to help with this)
 // - no considerations for caching
 // - pass by value everywhere
 // - no SIMD
@@ -38,17 +39,17 @@ typedef double   f64;
 #if !defined(internal)
     #define internal static // for 'static' functions
 #else
-    #warning "'internal' already defined. Make sure it's set to 'static'."
+    #pragma message("'internal' already defined. Make sure it's set to 'static'.")
 #endif
 #if !defined(local)
     #define local    static // for 'static' variables inside a function
 #else
-    #warning "'local' already defined. Make sure it's set to 'static'."
+    #pragma message("'local' already defined. Make sure it's set to 'static'.")
 #endif
 #if !defined(global)
     #define global   static // for 'static' variables w/ global scope in a unity build
 #else
-    #warning "'global' already defined. Make sure it's set to 'static'."
+    #pragma message("'global' already defined. Make sure it's set to 'static'.")
 #endif
 
 /* numerical limits */
@@ -79,6 +80,14 @@ typedef double   f64;
 #define EPSILON_F32 1.1920929e-7f
 #define EPSILON     EPSILON_F32
 
+/* symbolic constants */
+// enum axis_e
+// {
+//     AXIS_X,
+//     AXIS_Y,
+//     AXIS_Z,
+// };
+
 /* vector types and operations */
 typedef union v2f
 {
@@ -92,14 +101,14 @@ typedef union v2f
 #endif
 } v2f;
 
-inline static v2f v2f_add(const v2f lhs, const v2f rhs) { return (v2f){lhs.x + rhs.x, lhs.y + rhs.y}; }
-inline static v2f v2f_sub(const v2f lhs, const v2f rhs) { return (v2f){lhs.x - rhs.x, lhs.y - rhs.y}; }
-inline static v2f v2f_mul(const v2f lhs, const v2f rhs) { return (v2f){lhs.x * rhs.x, lhs.y * rhs.y}; }
-inline static v2f v2f_div(const v2f lhs, const v2f rhs) { return (v2f){lhs.x / rhs.x, lhs.y / rhs.y}; }
-inline static v2f v2f_add_s(const v2f lhs, const f32 scalar) { return v2f_add(lhs, (v2f){scalar, scalar}); }
-inline static v2f v2f_sub_s(const v2f lhs, const f32 scalar) { return v2f_sub(lhs, (v2f){scalar, scalar}); }
-inline static v2f v2f_mul_s(const v2f lhs, const f32 scalar) { return v2f_mul(lhs, (v2f){scalar, scalar}); }
-inline static v2f v2f_div_s(const v2f lhs, const f32 scalar) { return v2f_div(lhs, (v2f){scalar, scalar}); }
+inline static v2f v2f_add(const v2f lhs, const v2f rhs) { v2f ret = {lhs.x + rhs.x, lhs.y + rhs.y}; return ret; }
+inline static v2f v2f_sub(const v2f lhs, const v2f rhs) { v2f ret = {lhs.x - rhs.x, lhs.y - rhs.y}; return ret;}
+inline static v2f v2f_mul(const v2f lhs, const v2f rhs) { v2f ret = {lhs.x * rhs.x, lhs.y * rhs.y}; return ret;}
+inline static v2f v2f_div(const v2f lhs, const v2f rhs) { v2f ret = {lhs.x / rhs.x, lhs.y / rhs.y}; return ret;}
+inline static v2f v2f_add_s(const v2f lhs, const f32 scalar) { v2f vec = {scalar,scalar}; return v2f_add(lhs, vec); }
+inline static v2f v2f_sub_s(const v2f lhs, const f32 scalar) { v2f vec = {scalar,scalar}; return v2f_sub(lhs, vec); }
+inline static v2f v2f_mul_s(const v2f lhs, const f32 scalar) { v2f vec = {scalar,scalar}; return v2f_mul(lhs, vec); }
+inline static v2f v2f_div_s(const v2f lhs, const f32 scalar) { v2f vec = {scalar,scalar}; return v2f_div(lhs, vec); }
 inline static f32 v2f_dot(v2f lhs, v2f rhs) { return (lhs.x * rhs.x) + (lhs.y * rhs.y); }
 // TODO cross product
 // TODO length/magnitude
@@ -118,22 +127,24 @@ inline static f32 v2f_dot(v2f lhs, v2f rhs) { return (lhs.x * rhs.x) + (lhs.y * 
 typedef union v3f
 {
     struct { f32 x; f32 y; f32 z; };
+    struct { f32 r; f32 g; f32 b; };
     f32 e[3];
 
 #if defined(LANGUAGE_CPP)
     inline f32& operator[](const i32& idx) { return e[idx]; }
     inline f32 dot(const v3f rhs);
+    //inline rgb_u8 rgb_u8() { ASSERT(from 0 to 1) linear_remap(); return; }
 #endif
 } v3f;
 
-inline static v3f v3f_add(const v3f lhs, const v3f rhs) { return (v3f){lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z}; }
-inline static v3f v3f_sub(const v3f lhs, const v3f rhs) { return (v3f){lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z}; }
-inline static v3f v3f_mul(const v3f lhs, const v3f rhs) { return (v3f){lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z}; }
-inline static v3f v3f_div(const v3f lhs, const v3f rhs) { return (v3f){lhs.x / rhs.x, lhs.y / rhs.y, lhs.z / rhs.z}; }
-inline static v3f v3f_add_s(const v3f lhs, const f32 scalar) { return v3f_add(lhs, (v3f){scalar, scalar, scalar}); }
-inline static v3f v3f_sub_s(const v3f lhs, const f32 scalar) { return v3f_sub(lhs, (v3f){scalar, scalar, scalar}); }
-inline static v3f v3f_mul_s(const v3f lhs, const f32 scalar) { return v3f_mul(lhs, (v3f){scalar, scalar, scalar}); }
-inline static v3f v3f_div_s(const v3f lhs, const f32 scalar) { return v3f_div(lhs, (v3f){scalar, scalar, scalar}); }
+inline static v3f v3f_add(const v3f lhs, const v3f rhs) { v3f ret = {lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z}; return ret; }
+inline static v3f v3f_sub(const v3f lhs, const v3f rhs) { v3f ret = {lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z}; return ret; }
+inline static v3f v3f_mul(const v3f lhs, const v3f rhs) { v3f ret = {lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z}; return ret; }
+inline static v3f v3f_div(const v3f lhs, const v3f rhs) { v3f ret = {lhs.x / rhs.x, lhs.y / rhs.y, lhs.z / rhs.z}; return ret; }
+inline static v3f v3f_add_s(const v3f lhs, const f32 scalar) { v3f vec = {scalar, scalar, scalar}; return v3f_add(lhs, vec); }
+inline static v3f v3f_sub_s(const v3f lhs, const f32 scalar) { v3f vec = {scalar, scalar, scalar}; return v3f_sub(lhs, vec); }
+inline static v3f v3f_mul_s(const v3f lhs, const f32 scalar) { v3f vec = {scalar, scalar, scalar}; return v3f_mul(lhs, vec); }
+inline static v3f v3f_div_s(const v3f lhs, const f32 scalar) { v3f vec = {scalar, scalar, scalar}; return v3f_div(lhs, vec); }
 inline static f32 v3f_dot(v3f lhs, v3f rhs) { return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z); }
 #if defined(LANGUAGE_CPP)
     inline v3f operator+(v3f lhs, v3f rhs) { return v3f_add(lhs,rhs); }
@@ -148,11 +159,12 @@ inline static f32 v3f_dot(v3f lhs, v3f rhs) { return (lhs.x * rhs.x) + (lhs.y * 
 #endif
 
 /* TODO matrix types and operations */
-typedef struct m3f
+typedef union m3f
 {
     f32 e[3][3]; // NOTE: ROW MAJOR - E[ROW][COLUMN]!!!
+    v3f v[3];
 #if defined(LANGUAGE_CPP)
-    inline v3f operator[](const i32 idx) { ASSERT(idx < 3); return (v3f){e[idx][0],e[idx][1],e[idx][2]}; };
+    inline v3f& operator[](const i32 idx) { ASSERT(idx < 3); return v[idx]; };
     inline m3f inverse();
 #endif
 } m3f;
@@ -249,6 +261,7 @@ inline static m3f m3f_inv(m3f mat)
     inline m3f m3f::inverse()              { return m3f_inv(*this); }
 #endif
 
+#include <stdio.h> // NOTE: not included in release build
 inline static void m3f_print(m3f mat)
 {
     for (u32 i = 0; i < 3; i++)
@@ -260,6 +273,18 @@ inline static void m3f_print(m3f mat)
         printf("\n");
     }
 }
+
+/* useful typedefs */
+// typedef v3f   rgb_f32;
+// typedef v3u8  rgb_u8;
+// typedef v4f   rgba_f32;
+// typedef v4u8  rgba_f32;
+
+// typedef rgba_f32  color_t;
+// typedef v2i       point_i32
+// typedef v2f       point_f32
+// typedef point_f32 point_t;
+
 
 // TODO matrix-vector-multiplication
 

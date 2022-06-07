@@ -5,6 +5,23 @@
 
 extern void test_for_multiple_definition();
 
+PUSH_STRUCT_PACK(1)
+typedef struct test_align_packed
+{
+    int   a; //   4B
+    char  b; // + 1B
+    float c; // + 4B
+             // = 9B because of packing
+} test_align_packed;
+POP_STRUCT_PACK()
+typedef struct test_align_unpacked
+{
+    int   a; //    4B
+    char  b; // +  1B
+    float c; // +  4B
+             // = 12B bc of std alignment
+} test_align_unpacked;
+
 int main(int argc, char** argv)
 {
         test_for_multiple_definition();
@@ -81,11 +98,31 @@ int main(int argc, char** argv)
         /*                           */
         /* TODO TEST DEBUG FUNCTIONS */
         /*                           */
-        STATIC_ASSERT((2+2==4), "All good");
+        //STATIC_ASSERT((2+2==4), "All good");
         //STATIC_ASSERT((2+2==5), "ignorance is strength");
 
         ASSERT(1 == 1);
-        //ASSERT(0 == 1);
+        ASSERT(0 == 1);
+
+
+        /*              */
+        /* TEST PRAGMAS */
+        /*              */
+
+        /* Test if we can ignore warnings in a custom scope by pushing and popping */
+        PUSH_WARNINGS()
+        WARNING_TO_IGNORE("-Wshadow", 6244)
+        WARNING_TO_IGNORE("-Wshadow", 6246)
+        // test if shadowing a variable causes an error
+        int a = 0;
+        {
+                int a = 0;
+        }
+        POP_WARNINGS()
+
+        /* Test #pragma packing */
+        ASSERT( 9 == sizeof(test_align_packed));
+        ASSERT(12 == sizeof(test_align_unpacked));
 
         /*                           */
         /* TODO TEST MATH FUNCTIONS  */
@@ -129,7 +166,11 @@ int main(int argc, char** argv)
         v3f vec3 = v3f_add(vec1, vec2);
         f32 dot = v3f_dot(vec1,vec2);
 #endif
-        m3f_print(m3f_mul(mat2, m3f_inv(mat2))); // should equal identity matrix
+        m3f iden_test = m3f_mul(mat2, m3f_inv(mat2)); // should equal identity matrix (within an EPSILON range)
+        ASSERT((iden_test.e[0][0] + EPSILON) >= iden.e[0][0] || (iden_test.e[0][0] - EPSILON) <= iden.e[0][0]);
+        ASSERT((iden_test.e[1][1] + EPSILON) >= iden.e[1][1] || (iden_test.e[1][1] - EPSILON) <= iden.e[1][1]);
+        ASSERT((iden_test.e[2][2] + EPSILON) >= iden.e[2][2] || (iden_test.e[2][2] - EPSILON) <= iden.e[2][2]);
+        ASSERT((iden_test.e[0][1] + EPSILON) >= iden.e[0][1] || (iden_test.e[0][1] - EPSILON) <= iden.e[0][1]);
 
         ASSERT(vec3.x == 3.5f);
         ASSERT(vec3.y == 0.0f);
@@ -151,11 +192,11 @@ int main(int argc, char** argv)
         /* TODO TEST MEMORY FUNCTIONS */
         /*                            */
 
-        // TODO comment out once working on MSVC
-        //u64 offset = OFFSET_OF(v3f, x);
-        //ASSERT(offset == 0);
-        //offset = OFFSET_OF(v3f, y);
-        //ASSERT(offset == 4);
+        /* test offset of macro */
+        u64 offset = OFFSET_OF(v3f, x);
+        ASSERT(offset == 0);
+        offset = OFFSET_OF(v3f, y);
+        ASSERT(offset == 4);
 
         return 0;
 }

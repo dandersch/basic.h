@@ -51,6 +51,10 @@ typedef enum operating_system_e
         #define COMPILER_MINGW
         #undef COMPILER_GCC
     #endif
+
+#elif defined(__clang__ ) // NOTE for clang++ on windows
+    #define COMPILER_CLANG
+
 #elif defined(_MSC_VER)
     #define COMPILER_MSVC
 #else
@@ -67,7 +71,7 @@ typedef enum operating_system_e
 #elif defined(__aarch64__)
     #define ARCH_ARM64 // NOTE: untested
 #else
-//    #warning "Architecture not detected." // TODO not working on MSVC
+    WARNING("Architecture not detected.")
 #endif
 
 /* define export declarations for .dll & .so files */
@@ -103,27 +107,30 @@ typedef enum operating_system_e
     #define CDECL  not_defined
 #endif
 
-// TODO Both __cplusplus and __STDC_VERSION__, __STDC__ are not defined by MSVC
-// instead, it defines _MSC_VER, which can give us Visual C++ version (whatever that is..)
 #if defined(__cplusplus)
     #define LANGUAGE_CPP
 
-    #define STANDARD_VERSION (__cplusplus/100)
+    #if defined(_MSVC_LANG)
+        #define STANDARD_VERSION (_MSVC_LANG/100)
+    #else
+        #define STANDARD_VERSION (__cplusplus/100)
+    #endif
 
-    #if   __cplusplus >= 199701L && __cplusplus < 200400L
+    // NOTE: maybe we don't need this...
+    #if   STANDARD_VERSION >= 1997 && STANDARD_VERSION < 2004
         // NOTE: __cplusplus == 199711 for -std=c++98/c++03 for both clang & gcc
         #define STANDARD_Cxx98
         #define STANDARD_Cxx03
-    #elif __cplusplus >= 201101L && __cplusplus < 201200L
+    #elif STANDARD_VERSION >= 2011 && STANDARD_VERSION < 2012
         #define STANDARD_Cxx11
-    #elif __cplusplus >= 201401L && __cplusplus < 201500L
+    #elif STANDARD_VERSION >= 2014 && STANDARD_VERSION < 2015
         #define STANDARD_Cxx14
-    #elif __cplusplus >= 201701L && __cplusplus < 201800L
+    #elif STANDARD_VERSION >= 2017 && STANDARD_VERSION < 2018
         #define STANDARD_Cxx17
-    #elif __cplusplus >= 202001L && __cplusplus < 202100L
+    #elif STANDARD_VERSION >= 2020 && STANDARD_VERSION < 2021
         #define STANDARD_Cxx20
     #else
-//        #warning "C++ standard not detected" // TODO not working on MSVC
+        WARNING("C++ standard not detected")
     #endif
 #elif defined(__STDC_VERSION__)
     #define LANGUAGE_C
@@ -139,10 +146,10 @@ typedef enum operating_system_e
     #elif __STDC_VERSION__ >= 201701L && __STDC_VERSION__ < 201800L
         #define STANDARD_C17
     #else
-//        #warning "C standard not detected" // TODO not working on MSVC
+        WARNING("C standard not detected")
     #endif
 #else
-//    #warning "Language not detected (C or C++)" // TODO not working on MSVC
+    WARNING("Language not detected (C or C++)")
 #endif
 
 /* functions for runtime detection */

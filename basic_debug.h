@@ -1,19 +1,32 @@
 
 /* asserts */
 #ifdef ENABLE_ASSERTS
-#ifdef COMPILER_MINGW
-    #define _POSIX // needed for mingw to include SIGTRAP
-#endif
-#include <signal.h> // for SIGTRAP
+    #ifdef COMPILER_MINGW
+        #define _POSIX // needed for mingw to include SIGTRAP
+    #endif
 #include <stdio.h>  // for fprintf, stderr
 
+    // NOTE way to check for builtins: __has_builtin(__builtin_debugtrap)
+
+    // here a list of ways to implement a DEBUG_BREAK macro and on what OS+compiler they work
+    // see https://github.com/scottt/debugbreak for more info
+    //   __builtin_debugtrap();              linux: clang(++)                   windows: clang-cl.exe clang(++)
+    //   __builtin_trap();                   linux: clang(++) gcc(++) mingw(++) windows: clang(++) clang-cl.exe
+    //   #include <signal.h> raise(SIGTRAP); linux: clang(++) gcc(++) mingw(++) windows: none
+    //   DebugBreak()                        linux: none                        windows: cl.exe clang-cl.exe
+    //   __debugbreak()                      linux: none                        windows: cl.exe clang-cl.exe clang(++)
+    //   __asm__ volatile("int $0x03");      trap instruction, x86 specific
     #ifdef COMPILER_MSVC
-        #define DEBUG_BREAK() DebugBreak()
+        #define DEBUG_BREAK() __debugbreak()
     #else
-        #define DEBUG_BREAK() raise(SIGTRAP)
+        #if defined(ARCH_X86) || defined(ARCH_X64)
+            #define DEBUG_BREAK() __asm__ volatile("int $0x03")
+        #else
+            WARNING("No DEBUG_BREAK() defined for this architecture.")
+        #endif
     #endif
 
-    // NOTE: if __func__ is not supported, we might be able to use __FUNCTION__
+    // NOTE: __func__ seems to be supported everywhere (alternative in case: __FUNCTION__)
     #define _ASSERT_STRING "Assert failed for '%s' in file '%s', function: '%s' at line '%d'\n"
     #define ASSERT(expr)                                                      \
     if (expr) { }                                                             \
@@ -24,9 +37,12 @@
     }
 
     #define UNREACHABLE(msg, ...) { fprintf(stderr,msg,##__VA_ARGS__); ASSERT(false); }
+    #define UNIMPLEMENTED  fprintf(stderr, "function '%s' in %s:%s unimplemented!",  __func__, __FILE__, __LINE__); DEBUG_BREAK();
+
 #else
     #define ASSERT(expr)          (void)0
     #define UNREACHABLE(msg, ...) (void)0
+    #define UNIMPLEMENTED         (void)0
 #endif
 
 /* static_assert */
@@ -36,12 +52,8 @@
 #elif defined(LANGUAGE_C) && STANDARD_VERSION >= 2011
     #define STATIC_ASSERT(expr, msg) _Static_assert(expr, msg)
 #else
-//    #warning "No STATIC_ASSERT for compiler" // TODO not working on MSVC
-    #define STATIC_ASSERT(expr, msg)
-    // TODO portable static_assert?
-    //#define static_assert(c,l) typedef u64 Glue(l,__LINE__) [(c)?1:-1]
-    //#define Glue_(A,B) A##B
-    //#define Glue(A,B) Glue_(A,B)
+    // portable static_assert, but no message string is lost
+    #define STATIC_ASSERT(expr, msg) typedef char static_assertion[(expr)?1:-1]
 #endif
 
 /* TODO Logger */
