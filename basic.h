@@ -1,7 +1,5 @@
 #pragma once
 
-// testing git subtree
-
 #include "basic_pragma.h"
 #include "basic_platform.h"
 #include "basic_buildtype.h"
