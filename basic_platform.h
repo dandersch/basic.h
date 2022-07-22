@@ -9,8 +9,8 @@
  * - LANGUAGE_C|CPP
  * - STANDARD_C89|C99|C11|Cxx11|Cxx14|Cxx17|Cxx20|..
  * - STANDARD_VERSION (can go from 1989 to 2020)
- * - EXPORT (for cross-platform export declaration)
- * - CDECL  (specify c calling convention cross-platform)
+ * - EXPORT (for cross-platform export declaration, syntax: EXPORT void func() )
+ * - CDECL  (specify c calling convention cross-platform, syntax: void CDECL func() )
  * - ...
  */
 
@@ -85,6 +85,8 @@ typedef enum operating_system_e
     #else
         #define EXPORT
     #endif
+#elif defined(COMPILER_CLANG)
+    #define EXPORT __attribute__((visibility("default")))
 #elif defined(COMPILER_MSVC)
     #define EXPORT __declspec(dllexport)
 #elif defined(COMPILER_MINGW)

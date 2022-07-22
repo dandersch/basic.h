@@ -1,5 +1,3 @@
-test
-test.exe
+test_*
 *.obj
-a.exe
-a.out
+*.xml

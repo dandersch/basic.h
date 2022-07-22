@@ -46,13 +46,13 @@
 #endif
 
 /* static_assert */
-#if   defined(LANGUAGE_CPP) && STANDARD_VERSION >= 2011
+#if defined(LANGUAGE_CPP) && STANDARD_VERSION >= 2011
     // C++11 has built-in static_assert
     #define STATIC_ASSERT(expr, msg) static_assert(expr, msg)
 #elif defined(LANGUAGE_C) && STANDARD_VERSION >= 2011
     #define STATIC_ASSERT(expr, msg) _Static_assert(expr, msg)
 #else
-    // portable static_assert, but no message string is lost
+    // portable static_assert, but message string is lost
     #define STATIC_ASSERT(expr, msg) typedef char static_assertion[(expr)?1:-1]
 #endif
 

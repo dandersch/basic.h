@@ -102,7 +102,7 @@ int main(int argc, char** argv)
         //STATIC_ASSERT((2+2==5), "ignorance is strength");
 
         ASSERT(1 == 1);
-        ASSERT(0 == 1);
+        //ASSERT(0 == 1);
 
 
         /*              */
@@ -189,14 +189,38 @@ int main(int argc, char** argv)
         ASSERT(-0.3f == MIN(-0.3f, 1.0f));
 
         /*                            */
+        /* TODO TEST THREAD FUNCTIONS */
+        /*                            */
+        static thread_var u32 thread_thing = 0; // TODO test properly with threads
+
+        /*                            */
         /* TODO TEST MEMORY FUNCTIONS */
         /*                            */
+
+        /* "power of 2" macros */
+        STATIC_ASSERT(CHECK_IF_POW2(16), "");
+        STATIC_ASSERT(!CHECK_IF_POW2(18), "");
+
+        ASSERT(NEXT_ALIGN_POW2(12,16) == 16);
+        ASSERT(NEXT_ALIGN_POW2(18,16) == 32);
+        ASSERT(NEXT_ALIGN_POW2(34,32) == 64);
+        ASSERT(PREV_ALIGN_POW2(34,32) == 32);
 
         /* test offset of macro */
         u64 offset = OFFSET_OF(v3f, x);
         ASSERT(offset == 0);
         offset = OFFSET_OF(v3f, y);
         ASSERT(offset == 4);
+
+        /* test defer statement */
+        #ifdef defer
+            i32 x = 3;
+            {
+                defer(x *= 2);
+                x -= 1;
+            }
+            ASSERT(x == 4)
+        #endif
 
         return 0;
 }

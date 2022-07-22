@@ -291,6 +291,7 @@ inline static void m3f_print(m3f mat)
 // TODO m4f
 
 /* common operations */
+inline static i32 round_to_i32(f32 x) { return (i32) (x + 0.5f); };
 inline static f32 lerp(f32 min, f32 interpolant, f32 max) { return (min + interpolant * (max - min)); }
 inline static f32 unlerp(f32 min, f32 value, f32 max) { return (min != max) ? (value - min)/(max - min) : 0.0f; }
 inline static f32 linear_remap(f32 val, f32 a_min, f32 a_max, f32 b_min, f32 b_max) { return lerp(b_min, unlerp(a_min, val, a_max), b_max);}
