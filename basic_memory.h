@@ -42,6 +42,8 @@
 #endif
 
 /* TODO memory arena */
+// see
+// https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator
 
 struct mem_arena_t
 {

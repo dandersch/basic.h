@@ -45,6 +45,9 @@ rm test_msvcxx.exe 2>/dev/null
 # the extension of the files, which is why we use symlinks here
 cl.exe /analyze /std:c++14 test.cpp test2.cpp /link /OUT:test_msvcxx.exe /SUBSYSTEM:CONSOLE && WINEDEBUG=-all wine ./test_msvcxx.exe
 
+# switches to create debuggable .exe with separate pdb file
+# cl.exe /Zi /std:c++14 test.cpp test2.cpp /link /DEBUG:FULL /OUT:test_msvcxx.exe /PDB:test_msvcxx.pdb /SUBSYSTEM:CONSOLE
+
 echo ""
 echo "Testing MSVC, C17:"
 rm test_msvc.exe 2>/dev/null
@@ -68,3 +71,4 @@ echo ""
 echo "Testing clang++ on windows, C++14:"
 rm test_clangxx.exe 2>/dev/null
 clang++.exe --std=c++14 test.cpp test2.cpp -o test_clangxx.exe && WINEDEBUG=-all wine ./test_clangxx.exe
+
