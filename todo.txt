@@ -5,40 +5,24 @@ code & public domain libraries
   
 - [X] one .h that includes other .h files w/ BASIC_IMPLEMENTATION
 - [X] should include base.h (mostly for typedefs, compiler definitions...)
-- [0/4] MACROS:
-  + [X] ASSERT()
-  + [ ] STATIC_ASSERT()
-  + [ ] UNREACHABLE()
-  + [ ] PANIC()
-- [ ] custom memory arena w/ allocator
-- [ ] hashmap library (use own?)
-- [ ] dynamic array
-- [ ] custom imgui
-- [ ] custom debug utils & macros like
-  + [ ] logging
-  + [ ] asserts
-  + [ ] unreachable, panic, unimplemented
-- [0/3] a string replacement (no null terminated strings) w/ functions:
-  + [ ] isalnum()
-  + [ ] iswhitespace()
-  + [ ] how to (s|f)printf()?
 - [X] lerp functions (/macros)
 - [X] clamp functions
 - [X] min/max functions
-- [X] linear remap (map val in range x to y to equivalent val in range a to b),
-      implement with unlerp in the first range and then lerp in the second range
+- [X] linear remap (map val in range x to y to equivalent val in range a to b), implement with unlerp in the first range and then lerp in the second range
+- [ ] memory arena
+- [ ] hashmap
+- [ ] dynamic array
+- [ ] custom imgui
+- [ ] logging
+- [ ] a string replacement (no null terminated strings)
 - [ ] sorting algorithms
 - [ ] random number generator for (signed/unsigned) ints and float
-- [0/3] functions for file and filepaths
-  + [ ] our own file struct?
-  + [ ] getparent()
-  + [ ] splitpath()
-- [ ] custom introspection library
-- [ ] json parser
+- [ ] filepaths functions: getparent(), splitpath()
+- [ ] introspection with registrars
+- [ ] json/csv/... parser
 - [ ] way to get a window up crossplatform
 - [ ] cross platform event system
 - [ ] crossplatform audio library (miniaudio?)
 - [ ] custom, crossplatform opengl loader
 - [ ] custom, opengl 2d renderer
 - [ ] stb_img, stb_truetype
-- ...

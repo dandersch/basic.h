@@ -36,6 +36,7 @@
         DEBUG_BREAK();                                                        \
     }
 
+    // TODO try to use __builtin_unreachable
     #define UNREACHABLE(msg, ...) { fprintf(stderr,msg,##__VA_ARGS__); ASSERT(false); }
     #define UNIMPLEMENTED  fprintf(stderr, "function '%s' in %s:%s unimplemented!",  __func__, __FILE__, __LINE__); DEBUG_BREAK();
 
