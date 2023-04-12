@@ -38,7 +38,7 @@
 
     // TODO try to use __builtin_unreachable
     #define UNREACHABLE(msg, ...) { fprintf(stderr,msg,##__VA_ARGS__); ASSERT(false); }
-    #define UNIMPLEMENTED  fprintf(stderr, "function '%s' in %s:%s unimplemented!",  __func__, __FILE__, __LINE__); DEBUG_BREAK();
+    #define UNIMPLEMENTED  fprintf(stderr, "function '%s' in %s:%u unimplemented!",  __func__, __FILE__, __LINE__); DEBUG_BREAK();
 
 #else
     #define ASSERT(expr)          (void)0
@@ -57,8 +57,31 @@
     #define STATIC_ASSERT(expr, msg) typedef char static_assertion[(expr)?1:-1]
 #endif
 
-/* TODO Logger */
+#if defined(BUILD_DEBUG)
+    #if defined(PLATFORM_WIN32)
+        //#include <debugapi.h>
+        #include <windows.h>
+        static int debug_running_under_debugger()
+        {
+            return IsDebuggerPresent();
+        }
+    #else
+        #include <sys/ptrace.h>
+        static int debug_running_under_debugger()
+        {
+            static int debugger_detected;
+            static int debugger_present = 0;
+            if (!debugger_detected)
+            {
+                debugger_detected = 1;
+                debugger_present = (ptrace(PTRACE_TRACEME, 0, 0, 0) == -1);
+            }
+            return debugger_present;
+        }
+    #endif
+#endif
 
+/* TODO Logger */
 //enum log_severity_e
 //{
 //    LOG_INFO,

@@ -7,3 +7,5 @@
 #else
     #define thread_var __thread
 #endif
+
+/* TODO crossplatform thread functions */

@@ -41,19 +41,157 @@
     #define defer(code)   auto DEFER_3(_defer_) = defer_func([&](){code;})
 #endif
 
+/* memory is guaranteed to be initialized to zero */
+void* mem_reserve (u64 size);
+b32   mem_commit  (void* ptr, u64 size);
+void* mem_alloc   (u64 size);             /* reserve & commit  */
+void  mem_decommit(void* ptr, u64 size);
+void  mem_release (void* ptr, u64 size);
+void  mem_free    (void* ptr, u64 size);  /* decommit & release */
+void  mem_zero_out(void* ptr, u64 size);
+
+/* TODO scratch arena */
+
+#ifdef BASIC_IMPLEMENTATION
+#if defined(PLATFORM_WIN32)
+  #include <windows.h>
+  void* mem_reserve(u64 size)
+  {
+      void* mem = VirtualAlloc(0, size, MEM_RESERVE, PAGE_READWRITE);
+      return mem;
+  }
+  b32 mem_commit(void* ptr, u64 size)
+  {
+      b32 result = (VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE) != 0);
+      return result;
+  }
+  void* mem_alloc(u64 size)
+  {
+      void* mem = VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
+      return mem;
+  }
+  void mem_decommit(void* ptr, u64 size)
+  {
+      VirtualFree(ptr, size, MEM_DECOMMIT);
+  }
+  void mem_release(void* ptr,  u64 size)
+  {
+      VirtualFree(ptr, 0, MEM_RELEASE);
+  }
+  void mem_free(void* ptr, u64 size)
+  {
+      VirtualFree(ptr, size, MEM_DECOMMIT);
+      VirtualFree(ptr, 0, MEM_RELEASE);
+  }
+  void mem_zero_out(void* ptr, u64 size)
+  {
+      SecureZeroMemory(ptr, size);
+  }
+#elif defined(PLATFORM_LINUX) || defined(PLATFORM_MACOS)
+  #include <stdlib.h> /* for malloc */
+  #include <string.h> /* for memset */
+  /* TODO use mmap for reserving & mprotect to commit */
+  void* mem_reserve(u64 size)
+  {
+      void* mem = malloc(size);
+      mem_zero_out(mem, size);
+      return mem;
+  }
+  b32 mem_commit(void* ptr, u64 size) { return 1; }
+  void* mem_alloc(u64 size)
+  {
+      void* mem = malloc(size);
+      mem_zero_out(mem, size);
+      return mem;
+  }
+  void mem_decommit(void* ptr, u64 size) {}
+  void mem_release(void* ptr,  u64 size) { free(ptr); }
+  void mem_free(void* ptr,  u64 size)    { free(ptr); }
+  void mem_zero_out(void* ptr, u64 size) { memset(ptr, 0, size); }
+#endif
+#endif // BASIC_IMPLEMENTATION
+
 /* TODO memory arena */
-// see
-// https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator
+// see https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator
 
-struct mem_arena_t
+struct mem_arena_t;
+typedef struct mem_arena_t mem_arena_t;
+
+mem_arena_t       mem_arena_alloc  (u64 size_in_bytes);
+mem_arena_t       mem_arena_create (void* buf, u64 size_in_bytes);
+void*             mem_arena_push   (mem_arena_t* arena, u64 size);
+void              mem_arena_pop_to (mem_arena_t* arena, void* buf);
+void              mem_arena_pop_by (mem_arena_t* arena, u64 bytes);
+void              mem_arena_free   (mem_arena_t* arena);
+u64               mem_arena_get_pos(mem_arena_t* arena);
+
+/* arena macro helpers */
+#define ARENA_PUSH_ARRAY(arena, type, count) (type*) mem_arena_push((arena), sizeof(type)*(count))
+#define ARENA_PUSH_STRUCT(arena, type)       ARENA_PUSH_ARRAY((arena), type, 1)
+
+#ifdef BASIC_IMPLEMENTATION
+// NOTE: we could store the mem_arena struct inside the allocation itself
+struct mem_arena_t /* TODO reserve & commit */
 {
-    void* base_addr;
-    void* curr_addr;
-    u64   total_size;
+    u8* base; // memory address
+    u64 pos;  // offset from base gives memory address
+    u64 cap;
 };
-// NOTE: we can store the mem_arena struct inside the allocation itself
 
-//mem_arena_t mem_arena_create(u64 size_in_bytes) {}
-// mem_arena_allocate / mem_arena_push
-// mem_arena_free     / mem_arena_pop
-// mem_arena_destroy  / mem_arena_release_arena
+mem_arena_t mem_arena_alloc(u64 size_in_bytes)
+{
+    mem_arena_t arena;
+    arena.base = (u8*) mem_alloc(size_in_bytes); /* committing & reserving for now */
+    arena.pos  = 0;
+    arena.cap  = size_in_bytes;
+    return arena;
+}
+mem_arena_t mem_arena_create(void* buf, u64 size_in_bytes)
+{
+    /* NOTE right now user needs to make sure arena fits inside buffer */
+    mem_arena_t arena;
+    arena.base = (u8*) buf;
+    arena.pos  = 0;
+    arena.cap  = size_in_bytes;
+    return arena;
+}
+void* mem_arena_push(mem_arena_t* arena, u64 size)
+{
+    void* buf = NULL;
+    if ((arena->pos + size) <= arena->cap)
+    {
+        buf = (void*) (arena->base + arena->pos);
+        arena->pos = arena->pos + size;
+
+        /* TODO handle committing here */
+    }
+    ASSERT(buf);
+    return buf;
+}
+void mem_arena_pop_to(mem_arena_t* arena, void* buf)
+{
+    ASSERT(arena->base <= (u8*) buf);
+    ASSERT((arena->base + arena->cap) >= (u8*) buf);
+    u64 new_pos =  (u8*) buf - (u8*) arena->base;
+    u64 diff    = arena->pos - new_pos;
+    if (diff > 0)
+    {
+        arena->pos = new_pos;
+        mem_zero_out(arena->base + new_pos, diff);
+        /* TODO handle committing here */
+    }
+}
+void mem_arena_pop_by(mem_arena_t* arena, u64 bytes)
+{
+    ASSERT((arena->pos - bytes) >= 0);
+    mem_zero_out(arena->base + arena->pos, bytes);
+    arena->pos -= bytes;
+}
+void mem_arena_free(mem_arena_t* arena)
+{
+    mem_free((void*) arena->base, arena->cap);
+}
+u64 mem_arena_get_pos(mem_arena_t* arena) { return arena->pos; }
+#endif // BASIC_IMPLEMENTATION
+
+/* TODO FILE OPERATIONS  */
