@@ -1,8 +1,6 @@
 #pragma once
 
-/* includes typedefs, #defines, math types and operations */
-
-// NOTE: here are some ways in which these math operations can be slow:
+// NOTE: here are some ways in which these math operations will be slow:
 // - too many indirections could lead to failed inlining by compilers (we could
 //   use an always_inline attribute to help with this)
 // - no considerations for caching
@@ -14,6 +12,7 @@
  * v2u, v3u, v2i, v3i
  * rect_t, rectf_t
  * color_t, colorf_t
+ * m4f
 */
 
 /* mathematical constants */
@@ -26,14 +25,6 @@
 #define EULER       EULER_F32
 #define EPSILON_F32 1.1920929e-7f
 #define EPSILON     EPSILON_F32
-
-/* symbolic constants */
-// enum axis_e
-// {
-//     AXIS_X,
-//     AXIS_Y,
-//     AXIS_Z,
-// };
 
 /* vector types and operations */
 typedef union v2f
@@ -208,7 +199,7 @@ inline static m3f m3f_inv(m3f mat)
     inline m3f m3f::inverse()              { return m3f_inv(*this); }
 #endif
 
-#include <stdio.h> // NOTE: not included in release build
+#include <stdio.h> // TODO move this somewhere else
 inline static void m3f_print(m3f mat)
 {
     for (u32 i = 0; i < 3; i++)
@@ -232,10 +223,7 @@ inline static void m3f_print(m3f mat)
 // typedef v2f       point_f32
 // typedef point_f32 point_t;
 
-
 // TODO matrix-vector-multiplication
-
-// TODO m4f
 
 /* common operations */
 inline static i32 round_to_i32(f32 x) { return (i32) (x + 0.5f); };
@@ -253,6 +241,6 @@ inline static f32 linear_remap(f32 val, f32 a_min, f32 a_max, f32 b_min, f32 b_m
 // f64 absd(f64 val)
 // i32 sign(i32 val)
 // f32 signf(f32 val)
-//
 // f32 ceil(f32 val)
 // f32 floor(f32 val)
+// sqrt, sin, cos, tan, atan, ln

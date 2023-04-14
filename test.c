@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 
+#include <errno.h>
+
 extern void test_for_multiple_definition();
 
 PUSH_STRUCT_PACK(1)
@@ -22,6 +24,12 @@ typedef struct test_align_unpacked
     float c; // +  4B
              // = 12B bc of std alignment
 } test_align_unpacked;
+
+typedef struct node_t /* for testing linked list macros */
+{
+    int            data;
+    struct node_t* next;
+} node_t;
 
 int main(int argc, char** argv)
 {
@@ -102,7 +110,7 @@ int main(int argc, char** argv)
     STATIC_ASSERT((2+2==4), "All good");
     //STATIC_ASSERT((2+2==5), "ignorance is strength");
 
-    ASSERT(!debug_running_under_debugger()); /* NOTE: run in debugger to test this */
+    //ASSERT(!debug_running_under_debugger()); /* NOTE: run in debugger to test this */
 
     ASSERT(1 == 1);
     //ASSERT(0 == 1);
@@ -228,28 +236,40 @@ int main(int argc, char** argv)
     /*             */
     /* TEST MEMORY */
     /*             */
-    u64 buf_size  = MEGABYTES(1);
-    u8* buf       = (u8*) mem_reserve(buf_size);
+    u64 buf_size_reserved  = MEGABYTES(1);
+    u8* buf                = (u8*) mem_reserve(buf_size_reserved);
     ASSERT(buf);
-    b32 committed = mem_commit(buf, buf_size);
+    u64 buf_size_committed = KILOBYTES(1);
+    b32 committed          = mem_commit(buf, buf_size_committed);
     ASSERT(committed);
-    u8* buf_2     = (u8*) mem_alloc(buf_size);
+    u8* buf_2              = (u8*) mem_alloc(buf_size_committed);
     ASSERT(buf_2);
 
     /* test if memory is initialized to zero */
-    for (u32 i = 0; i < buf_size; i++)
+    for (u32 i = 0; i < buf_size_committed; i++)
     {
         ASSERT(!buf[i]);
         ASSERT(!buf_2[i]);
     }
 
+    /* copying and comparing memory */
+    for (u32 i = 0; i < buf_size_committed; i++)
+    {
+        buf[i] = 'a';
+    }
+    ASSERT(!mem_equal(buf, buf_2, buf_size_committed));
+    mem_copy(buf_2, buf, buf_size_committed);
+    ASSERT(mem_equal(buf, buf_2, buf_size_committed));
+
     /* freeing memory */
-    mem_decommit(buf, buf_size);
-    mem_release(buf, buf_size);
-    mem_free(buf_2, buf_size);
+    b32 decommitted = mem_decommit(buf, buf_size_committed);
+    ASSERT(decommitted);
+    // for (u32 i = 0; i < buf_size_committed; i++) { buf[0] = 'b'; } // should cause SEGV
+    mem_release(buf,  buf_size_committed);
+    mem_free(buf_2,   buf_size_committed);
 
     /* memory arenas */
-    mem_arena_t arena = mem_arena_alloc(buf_size);
+    mem_arena_t arena = mem_arena_alloc(MEGABYTES(1));
     u8* arena_buf     = (u8*) mem_arena_push(&arena, KILOBYTES(4));
     for (u32 i = 0; i < KILOBYTES(4); i++) { ASSERT(!arena_buf[i]); }
     mem_arena_pop_by(&arena, KILOBYTES(1));
@@ -276,7 +296,48 @@ int main(int argc, char** argv)
     //mem_arena_push(&sub_arena, KILOBYTES(3));
     //mem_arena_push(&arena,     MEGABYTES(10));
 
+    /*             */
+    /* LINKED LIST */
+    /*             */
+    node_t* first  = (node_t*) mem_alloc(sizeof(node_t));
+    first->data    = 1;
+    node_t* second = ARENA_PUSH_STRUCT(&arena, node_t);
+    second->data   = 2;
+    node_t* third  = (node_t*) mem_alloc(sizeof(node_t));
+    third->data    = 3;
+
+    LL_APPEND(first, second);
+    LL_APPEND(first, third);
+
+    #if defined(LANGUAGE_C) && defined(COMPILER_MSVC)
+    node_t* idx; /* no typeof macro */
+    #else
+    TYPE_OF(first) idx;
+    #endif
+    i32 val = 1;
+    LL_FOREACH(first, idx)
+    {
+        ASSERT(idx->data == val);
+        val++;
+    }
+
     mem_arena_free(&arena);
+
+    /* DYNAMIC ARRAY */
+    i32* array              = (i32*) dynarr_create(sizeof(i32));
+    dynarr_header_t* header = dynarr_header(array);
+    printf("%lu %lu\n", header->len, header->cap);
+
+    for (i32 i = 0; i < 2000000; i++)
+    {
+        dynarr_push(array, i);
+    }
+
+    printf("%lu %lu\n", dynarr_len(array), header->cap);
+    for (i32 i = 0; i < dynarr_len(array); i++)
+    {
+        //printf("%i ", array[i]);
+    }
 
     return 0;
 }

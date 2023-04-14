@@ -41,14 +41,31 @@
     #define defer(code)   auto DEFER_3(_defer_) = defer_func([&](){code;})
 #endif
 
+/* TYPE_OF macro for all compilers except MSVC in C-mode */
+#if defined(LANGUAGE_CPP)
+  #define TYPE_OF(e) decltype(e)
+#elif !defined(COMPILER_MSVC)
+  /* NOTE: non standard gcc extension, but works everywhere except MSVC w/ C */
+  #define TYPE_OF(e) __typeof__(e)
+#else
+  #undef TYPE_OF
+  #define TYPE_OF(e) STATIC_ASSERT(0, "TYPE_OF macro doesn't work w/ MSVC in C");
+#endif
+
 /* memory is guaranteed to be initialized to zero */
 void* mem_reserve (u64 size);
-b32   mem_commit  (void* ptr, u64 size);
-void* mem_alloc   (u64 size);             /* reserve & commit  */
-void  mem_decommit(void* ptr, u64 size);
-void  mem_release (void* ptr, u64 size);
-void  mem_free    (void* ptr, u64 size);  /* decommit & release */
-void  mem_zero_out(void* ptr, u64 size);
+b32   mem_commit  (void* ptr,   u64 size);
+void* mem_alloc   (u64 size);               /* reserve & commit  */
+b32   mem_decommit(void* ptr,   u64 size);
+void  mem_release (void* ptr,   u64 size);
+void  mem_free    (void* ptr,   u64 size);  /* decommit & release */
+void  mem_zero_out(void* ptr,   u64 size);
+b32   mem_equal   (void* buf_a, void* buf_b, u64 size_in_bytes);
+void  mem_copy    (void* dst,   void* src,   u64 size_in_bytes);
+
+/* helper macros */
+#define MEM_ZERO_OUT_STRUCT(s) mem_zero_out((s), sizeof(*(s)))
+#define MEM_ZERO_OUT_ARRAY(a)  mem_zero_out((a), sizeof(a))
 
 /* TODO scratch arena */
 
@@ -70,9 +87,9 @@ void  mem_zero_out(void* ptr, u64 size);
       void* mem = VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
       return mem;
   }
-  void mem_decommit(void* ptr, u64 size)
+  b32 mem_decommit(void* ptr, u64 size)
   {
-      VirtualFree(ptr, size, MEM_DECOMMIT);
+      return VirtualFree(ptr, size, MEM_DECOMMIT);
   }
   void mem_release(void* ptr,  u64 size)
   {
@@ -87,27 +104,85 @@ void  mem_zero_out(void* ptr, u64 size);
   {
       SecureZeroMemory(ptr, size);
   }
+  b32 mem_equal(void* buf_a, void* buf_b, u64 size_in_bytes)
+  {
+      /* NOTE RtlCompareMemory works differently from memcmp (it returns number
+       * of bytes matched), so we limit our memory compare function to just test
+       * for equality right now */
+      return (RtlCompareMemory(buf_a, buf_b, size_in_bytes) == size_in_bytes);
+  }
+  void mem_copy(void* dst, void* src, u64 size_in_bytes)
+  {
+      RtlCopyMemory(dst, src, size_in_bytes);
+  }
 #elif defined(PLATFORM_LINUX) || defined(PLATFORM_MACOS)
-  #include <stdlib.h> /* for malloc */
-  #include <string.h> /* for memset */
-  /* TODO use mmap for reserving & mprotect to commit */
+  #include <stdlib.h>   /* for malloc */
+  #include <string.h>   /* for memset */
+  #include <sys/mman.h> /* for mmmap, mprotect, madvise */
+  /* NOTE: right now we only use mmap & mprotect for reserving & committing
+     memory, because it seems that we can't easily mix e.g. calls like void*
+     buf=malloc w/ subsequent calls to munmap(buf) or calls to buf = mmap with
+     subsequent calls to free(buf) */
+  /* TODO find out if malloc is slower/faster than mmap & mprotect */
+  // TODO use mremap() with MREMAP_MAYMOVE for moving memory (use same protection flags)
+  // see http://www.smallbulb.net/2018/809-reserve-virtual-memory
   void* mem_reserve(u64 size)
   {
-      void* mem = malloc(size);
-      mem_zero_out(mem, size);
+      // TODO find out what MAP_PRIVATE does
+      void* mem = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      //void* mem = malloc(size);
+      //mem_zero_out(mem, size);
       return mem;
   }
-  b32 mem_commit(void* ptr, u64 size) { return 1; }
+  b32 mem_commit(void* ptr, u64 size)
+  {
+      /* TODO breaking compat with 32bit architecture here because we use u64 as a pointer */
+      /* TODO mprotect fails if addr is not multiple of the page size as returned by sysconf() */
+      /* TODO check if VirtualAlloc has a similar requirement  */
+      const u64 PAGESIZE = 4096; // TODO get this programmatically
+      u64 next_page_addr = (((u64)ptr) & ~(PAGESIZE-1));
+      u64 prev_page_addr = next_page_addr - 4096;
+      u64 offset_from_prev_page = ((u64) ptr) - next_page_addr;
+      ptr  = (void*) next_page_addr;
+      size = size + offset_from_prev_page;
+
+      i32 i = mprotect(ptr, size, PROT_READ | PROT_WRITE);
+      ASSERT(i == 0);
+      //mem_zero_out(ptr, size); // TODO maybe we don't have to zero out here because mmap does it for us ?
+      return (i == 0);
+  }
   void* mem_alloc(u64 size)
   {
-      void* mem = malloc(size);
-      mem_zero_out(mem, size);
+      void* mem  = mem_reserve(size);
+      b32 result = mem_commit(mem, size);
+      //void* mem = malloc(size);
+      //mem_zero_out(mem, size);
       return mem;
   }
-  void mem_decommit(void* ptr, u64 size) {}
-  void mem_release(void* ptr,  u64 size) { free(ptr); }
-  void mem_free(void* ptr,  u64 size)    { free(ptr); }
+  b32 mem_decommit(void* ptr, u64 size)
+  {
+      /* NOTE: This doesn't seem to do anything and is not supported by all compilers */
+      //i32 result = madvise(ptr, size, MADV_DONTNEED);
+
+      i32 result     = mprotect(ptr, size, PROT_NONE);
+      return (result == 0);
+  }
+  void mem_release(void* ptr,  u64 size) { munmap(ptr, size); }
+  void mem_free(void* ptr,  u64 size)
+  {
+      // free(ptr);
+      mem_decommit(ptr, size);
+      mem_release(ptr, size);
+  }
   void mem_zero_out(void* ptr, u64 size) { memset(ptr, 0, size); }
+  b32 mem_equal(void* buf_a, void* buf_b, u64 size_in_bytes)
+  {
+      return (memcmp(buf_a, buf_b, size_in_bytes) == 0);
+  }
+  void mem_copy(void* dst, void* src, u64 size_in_bytes)
+  {
+      memcpy(dst, src, size_in_bytes);
+  }
 #endif
 #endif // BASIC_IMPLEMENTATION
 

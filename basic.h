@@ -4,7 +4,8 @@
  * own code & public domain libraries */
 
 /* TODO:
- * [ ] hashmap
+ * [X] linked list macros
+ * [ ] hashtable
  * [ ] dynamic array
  * [ ] custom imgui
  * [ ] logging
@@ -36,4 +37,6 @@
 #include "basic_math.h"
 #include "basic_thread.h"
 #include "basic_memory.h"
+#include "basic_linkedlist.h"
+#include "basic_dynarr.h"
 //#include "basic_string.h"

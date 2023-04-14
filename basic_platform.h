@@ -179,3 +179,4 @@ inline static const char* platform_os_string(operating_system_e os)
     }
     return string;
 }
+
