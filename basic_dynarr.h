@@ -27,17 +27,16 @@
 */
 
 
-#define DYNARR_RESERVE_SIZE     GIGABYTES(4) // maybe let the user decide for each array and store in header
+/* NOTE 4GB is max for 32bit  */
+#define DYNARR_RESERVE_SIZE     GIGABYTES(1) // maybe let the user decide for each array and store in header
 #define DYNARR_INITIAL_CAPACITY 100          // nr of elements that can fit after initial commit
 
 #define dynarr_len(a)       ((a) ? (dynarr_header(a))->len : 0)
-//#define dynarr_push(a,v)    (stbds_arrmaybegrow(a,1), (a)[stbds_header(a)->length++] = (v))
-#define dynarr_pop(a)       (stbds_header(a)->length--, (a)[stbds_header(a)->length])
+#define dynarr_pop(a)       (dynarr_header(a)->len--, (a)[dynarr_header(a)->len])
 #define dynarr_back(a)      ((a)[stbds_header(a)->length-1])
 #define dynarr_free(a)      ((void) ((a) ? realloc(stbds_header(a),0) : 0), (a)=NULL)
 #define dynarr_del(a,i)     stbds_arrdeln(a,i,1)
 #define dynarr_insert(a)    (stbds_arrinsn((a),(i),1), (a)[i]=(v))
-//#define dynarr_create(type) ;
 
 typedef struct dynarr_header_t
 {

@@ -119,6 +119,7 @@ void  mem_copy    (void* dst,   void* src,   u64 size_in_bytes);
   #include <stdlib.h>   /* for malloc */
   #include <string.h>   /* for memset */
   #include <sys/mman.h> /* for mmmap, mprotect, madvise */
+  #include <unistd.h>   /* for getpagesize() */
   /* NOTE: right now we only use mmap & mprotect for reserving & committing
      memory, because it seems that we can't easily mix e.g. calls like void*
      buf=malloc w/ subsequent calls to munmap(buf) or calls to buf = mmap with
@@ -139,10 +140,11 @@ void  mem_copy    (void* dst,   void* src,   u64 size_in_bytes);
       /* TODO breaking compat with 32bit architecture here because we use u64 as a pointer */
       /* TODO mprotect fails if addr is not multiple of the page size as returned by sysconf() */
       /* TODO check if VirtualAlloc has a similar requirement  */
-      const u64 PAGESIZE = 4096; // TODO get this programmatically
-      u64 next_page_addr = (((u64)ptr) & ~(PAGESIZE-1));
-      u64 prev_page_addr = next_page_addr - 4096;
-      u64 offset_from_prev_page = ((u64) ptr) - next_page_addr;
+      const uintptr_t PAGESIZE = sysconf(_SC_PAGE_SIZE);
+      //printf("%u\n", sizeof(uintptr_t));
+      uintptr_t next_page_addr = (((uintptr_t) ptr) & ~(PAGESIZE-1));
+      uintptr_t prev_page_addr = next_page_addr - PAGESIZE;
+      uintptr_t offset_from_prev_page = ((uintptr_t) ptr) - next_page_addr;
       ptr  = (void*) next_page_addr;
       size = size + offset_from_prev_page;
 
@@ -199,6 +201,14 @@ void              mem_arena_pop_to (mem_arena_t* arena, void* buf);
 void              mem_arena_pop_by (mem_arena_t* arena, u64 bytes);
 void              mem_arena_free   (mem_arena_t* arena);
 u64               mem_arena_get_pos(mem_arena_t* arena);
+
+/* TODO new API */
+// mem_arena_t* mem_arena_reserve(u64 size_in_bytes);
+// mem_arena_t* mem_arena_subarena(mem_arena_t* arena, u64 size_in_bytes); /* no commit */
+
+
+/* helper */
+// mem_arena_t* mem_arena_default();
 
 /* arena macro helpers */
 #define ARENA_PUSH_ARRAY(arena, type, count) (type*) mem_arena_push((arena), sizeof(type)*(count))

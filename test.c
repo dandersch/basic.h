@@ -326,14 +326,15 @@ int main(int argc, char** argv)
     /* DYNAMIC ARRAY */
     i32* array              = (i32*) dynarr_create(sizeof(i32));
     dynarr_header_t* header = dynarr_header(array);
-    printf("%lu %lu\n", header->len, header->cap);
+    //printf("%lu %lu\n", header->len, header->cap);
 
-    for (i32 i = 0; i < 2000000; i++)
+    for (i32 i = 0; i < 20000; i++)
     {
+        //printf("%lu %lu\n", header->len, header->cap);
         dynarr_push(array, i);
     }
 
-    printf("%lu %lu\n", dynarr_len(array), header->cap);
+    //printf("%lu %lu\n", dynarr_len(array), header->cap);
     for (i32 i = 0; i < dynarr_len(array); i++)
     {
         //printf("%i ", array[i]);
