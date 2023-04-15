@@ -57,7 +57,7 @@
 #endif
 
 /* memory is guaranteed to be initialized to zero */
-void* mem_reserve (u64 size);
+void* mem_reserve (void* at, u64 size);     /* pass NULL if location doesn't matter */
 b32   mem_commit  (void* ptr,   u64 size);
 void* mem_alloc   (u64 size);               /* reserve & commit  */
 b32   mem_decommit(void* ptr,   u64 size);
@@ -75,9 +75,9 @@ u64   mem_pagesize(); /* pagesize in bytes */
 #ifdef BASIC_IMPLEMENTATION
 #if defined(PLATFORM_WIN32)
   #include <windows.h>
-  void* mem_reserve(u64 size)
+  void* mem_reserve(void* at, u64 size)
   {
-      void* mem = VirtualAlloc(0, size, MEM_RESERVE, PAGE_READWRITE);
+      void* mem = VirtualAlloc(at, size, MEM_RESERVE, PAGE_READWRITE);
       return mem;
   }
   b32 mem_commit(void* ptr, u64 size)
@@ -137,39 +137,19 @@ u64   mem_pagesize(); /* pagesize in bytes */
   /* TODO find out if malloc is slower/faster than mmap & mprotect */
   // TODO use mremap() with MREMAP_MAYMOVE for moving memory (use same protection flags)
   // see http://www.smallbulb.net/2018/809-reserve-virtual-memory
-  void* mem_reserve(u64 size)
+  void* mem_reserve(void* at, u64 size)
   {
-      /* TODO try to get a fixed memory address in debug builds */
-      //#if BUILD_DEBUG
-      //void* mem = mmap(GIGABYTES(256), size, PROT_NONE, MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
-      //#else
-      void* mem = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      //#endif
-      //void* mem = malloc(size);
-      //mem_zero_out(mem, size);
+      /* try to get a fixed memory address if passed in. User has to check if
+         at==mem to see if it worked */
+      i32 flags = MAP_PRIVATE | MAP_ANONYMOUS;
+      if (at) { flags |= MAP_FIXED; }
+      void* mem = mmap(at, size, PROT_NONE, flags, -1, 0);
       return mem;
   }
   b32 mem_commit(void* ptr, u64 size)
   {
-      /* TODO breaking compat with 32bit architecture here because we use u64 as a pointer */
-      /* TODO check if VirtualAlloc has a similar requirement  */
-
-      //const uintptr_t PAGESIZE = sysconf(_SC_PAGE_SIZE);
-      ////printf("%u\n", sizeof(uintptr_t));
-      //uintptr_t next_page_addr = (((uintptr_t) ptr) & ~(PAGESIZE-1));
-      //uintptr_t prev_page_addr = next_page_addr - PAGESIZE;
-      //uintptr_t offset_from_prev_page = ((uintptr_t) ptr) - next_page_addr;
-      //ptr  = (void*) next_page_addr;
-      //size = size + offset_from_prev_page;
-
       /* TODO mprotect fails if addr is not aligned to a page boundary and if
        * length (size) is not a multiple of the page size as returned by sysconf(). */
-      uintptr_t prev_page_boundary           = ALIGN_TO_PREV_PAGE(ptr);
-      uintptr_t next_page_boundary           = ALIGN_TO_NEXT_PAGE(ptr);
-      uintptr_t size_as_multiple_of_pagesize = ALIGN_TO_NEXT_PAGE(size);
-      ptr  = (void*) prev_page_boundary;
-      size = size_as_multiple_of_pagesize;
-
       uintptr_t commit_begin = (uintptr_t) ptr;
       uintptr_t commit_end   = (uintptr_t) ptr + size;
       commit_begin           = ALIGN_TO_PREV_PAGE(commit_begin);
@@ -177,19 +157,18 @@ u64   mem_pagesize(); /* pagesize in bytes */
       size                   = commit_end - commit_begin;
       ptr                    = (void*) commit_begin;
 
-      /* TODO: overcommitting here by 1 pagesize solves some edge cases - find out why */
-      size                  += mem_pagesize();
+      size += mem_pagesize(); /* TODO: overcommitting here by 1 pagesize solves some edge cases - find out why */
 
       ASSERT(!(size % mem_pagesize()));
       ASSERT(!(((uintptr_t) ptr) % mem_pagesize()));
 
       i32 i = mprotect(ptr, size, PROT_READ | PROT_WRITE);
-      ASSERT(i == 0);
+      ASSERT(i == 0); // we assert here for now, should be done by the user
       return (i == 0);
   }
   void* mem_alloc(u64 size)
   {
-      void* mem  = mem_reserve(size);
+      void* mem  = mem_reserve(NULL, size);
       b32 result = mem_commit(mem, size);
       return mem;
   }

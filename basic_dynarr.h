@@ -74,7 +74,7 @@ static void dynarr_maybe_grow_by_n(void* arr, u64 n)
 
 static void* dynarr_create(u64 elem_size)
 {
-    dynarr_header_t* header = (dynarr_header_t*) mem_reserve(DYNARR_RESERVE_SIZE);
+    dynarr_header_t* header = (dynarr_header_t*) mem_reserve(NULL, DYNARR_RESERVE_SIZE);
     mem_commit(header, (DYNARR_INITIAL_CAPACITY * elem_size) + sizeof(dynarr_header_t));   /* TODO error handling */
     header->len       = 0;
     header->cap       = DYNARR_INITIAL_CAPACITY;
