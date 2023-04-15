@@ -37,6 +37,7 @@
 #include "basic_math.h"
 #include "basic_thread.h"
 #include "basic_memory.h"
+#include "basic_arena.h"
 #include "basic_linkedlist.h"
 #include "basic_dynarr.h"
 //#include "basic_string.h"

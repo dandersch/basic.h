@@ -28,7 +28,7 @@
 
 
 /* NOTE 4GB is max for 32bit  */
-#define DYNARR_RESERVE_SIZE     GIGABYTES(1) // maybe let the user decide for each array and store in header
+#define DYNARR_RESERVE_SIZE     MEGABYTES(1) // maybe let the user decide for each array and store in header
 #define DYNARR_INITIAL_CAPACITY 100          // nr of elements that can fit after initial commit
 
 #define dynarr_len(a)       ((a) ? (dynarr_header(a))->len : 0)

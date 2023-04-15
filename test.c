@@ -31,8 +31,28 @@ typedef struct node_t /* for testing linked list macros */
     struct node_t* next;
 } node_t;
 
+/* NOTE invalid sizes on 32bit arch */
+#define RES_MEM_ENTITIES    ALIGN_TO_NEXT_PAGE(GIGABYTES(4))
+#define RES_MEM_GAME_TEMP   ALIGN_TO_NEXT_PAGE(MEGABYTES(100))
+#define RES_MEM_GAME        RES_MEM_ENTITIES + RES_MEM_GAME_TEMP
+
+#define RES_MEM_TEXTURES    ALIGN_TO_NEXT_PAGE(GIGABYTES(2))
+#define RES_MEM_MESHES      ALIGN_TO_NEXT_PAGE(GIGABYTES(2))
+#define RES_MEM_RENDERER    RES_MEM_TEXTURES + RES_MEM_MESHES
+
+#define RES_MEM_FILES       ALIGN_TO_NEXT_PAGE(MEGABYTES(512))
+#define RES_MEM_NETWORK     ALIGN_TO_NEXT_PAGE(KILOBYTES(10))
+#define RES_MEM_PLATFORM    RES_MEM_FILES + RES_MEM_NETWORK
+
+#define RES_MEM_APPLICATION RES_MEM_GAME + RES_MEM_RENDERER + RES_MEM_PLATFORM
+
 int main(int argc, char** argv)
 {
+    void* test_ptr = (void*) 49802293lu;
+    ASSERT((ALIGN_TO_NEXT_PAGE(test_ptr) - ALIGN_TO_PREV_PAGE(test_ptr)) == mem_pagesize());
+    ASSERT(ALIGN_TO_NEXT_PAGE(test_ptr) > (uintptr_t) test_ptr);
+    ASSERT(ALIGN_TO_PREV_PAGE(test_ptr) < (uintptr_t) test_ptr);
+
     test_for_multiple_definition();
 
     /*                         */
@@ -236,12 +256,16 @@ int main(int argc, char** argv)
     /*             */
     /* TEST MEMORY */
     /*             */
-    u64 buf_size_reserved  = MEGABYTES(1);
+    ASSERT((ALIGN_TO_NEXT_PAGE(49802293) - ALIGN_TO_PREV_PAGE(49802293)) == mem_pagesize());
+
+    u64 buf_size_reserved  = MEGABYTES(8);
     u8* buf                = (u8*) mem_reserve(buf_size_reserved);
     ASSERT(buf);
-    u64 buf_size_committed = KILOBYTES(1);
+
+    u64 buf_size_committed = KILOBYTES(12);
     b32 committed          = mem_commit(buf, buf_size_committed);
     ASSERT(committed);
+
     u8* buf_2              = (u8*) mem_alloc(buf_size_committed);
     ASSERT(buf_2);
 
@@ -260,6 +284,7 @@ int main(int argc, char** argv)
     ASSERT(!mem_equal(buf, buf_2, buf_size_committed));
     mem_copy(buf_2, buf, buf_size_committed);
     ASSERT(mem_equal(buf, buf_2, buf_size_committed));
+
 
     /* freeing memory */
     b32 decommitted = mem_decommit(buf, buf_size_committed);
