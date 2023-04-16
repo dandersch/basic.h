@@ -3,6 +3,10 @@
 struct mem_arena_t;
 typedef struct mem_arena_t mem_arena_t;
 
+/* see
+   https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002/
+*/
+
 /* api */
 mem_arena_t*      mem_arena_reserve(u64 size_in_bytes);              /* create an arena w/ reserved memory       */
 void*             mem_arena_push    (mem_arena_t* arena, u64 size);  /* push on the arena, committing if needed  */

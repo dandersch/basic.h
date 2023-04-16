@@ -24,6 +24,10 @@
        }
 */
 
+/* see
+   https://nothings.org/stb_ds/
+*/
+
 
 /* NOTE 4GB is max for 32bit  */
 #define DYNARR_RESERVE_SIZE     MEGABYTES(1) // maybe let the user decide for each array and store in header
