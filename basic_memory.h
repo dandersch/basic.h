@@ -22,8 +22,10 @@
 #define PREV_ALIGN_POW2(x,align) ((x) & ~((align) - 1))
 
 /* align e.g. a memory address to its next page boundary */
-#define ALIGN_TO_NEXT_PAGE(val) NEXT_ALIGN_POW2((uintptr_t) val, mem_pagesize())
-#define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, mem_pagesize())
+//#define ALIGN_TO_NEXT_PAGE(val) NEXT_ALIGN_POW2((uintptr_t) val, mem_pagesize())
+//#define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, mem_pagesize())
+#define ALIGN_TO_NEXT_PAGE(val) NEXT_ALIGN_POW2((uintptr_t) val, 4096)
+#define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, 4096)
 
 /* add a defer statement for C++11 and up */
 #if defined(LANGUAGE_CPP) && (STANDARD_VERSION >= 2011)
@@ -144,6 +146,7 @@ u64   mem_pagesize(); /* pagesize in bytes */
       i32 flags = MAP_PRIVATE | MAP_ANONYMOUS;
       if (at) { flags |= MAP_FIXED; }
       void* mem = mmap(at, size, PROT_NONE, flags, -1, 0);
+      if (mem == MAP_FAILED) { mem = NULL; }
       return mem;
   }
   b32 mem_commit(void* ptr, u64 size)
@@ -174,10 +177,9 @@ u64   mem_pagesize(); /* pagesize in bytes */
   }
   b32 mem_decommit(void* ptr, u64 size)
   {
+      i32 result     = mprotect(ptr, size, PROT_NONE);
       /* NOTE: This doesn't seem to do anything and is not supported by all compilers */
       //i32 result = madvise(ptr, size, MADV_DONTNEED);
-
-      i32 result     = mprotect(ptr, size, PROT_NONE);
       return (result == 0);
   }
   void mem_release(void* ptr,  u64 size)

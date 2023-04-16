@@ -41,14 +41,6 @@ typedef struct string_t
 // NOTE: not valid in MSVC C++
 #define S(str) (string_t) { (sizeof(str)/sizeof(str[0])) - 1, str }
 
-#include <stdio.h>
-int main()
-{
-    string_t str = S("Hello");
-
-    printf("%lu\n", str.len());
-}
-
 //string_t string_string0_to_string(char* str) { return {str, strlen(str)}; };
 //string_t string_slice(string_t string, u32 from, u32 to);
 

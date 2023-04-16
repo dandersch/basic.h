@@ -5,14 +5,14 @@
 
 /* TODO:
  * [X] linked list macros
+ * [-] dynamic array
  * [ ] hashtable
- * [ ] dynamic array
  * [ ] custom imgui
  * [ ] logging
  * [ ] a string replacement (no null terminated strings)
  * [ ] (pseudo) random number generator
  * [ ] file & filepath operations
- * [ ] introspection (maybe with registrars)
+ * [ ] introspection (maybe with registries)
  * [ ] threads
  * [ ] json/csv/... parser
  * [ ] sorting algorithms

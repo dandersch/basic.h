@@ -4,10 +4,6 @@
 
 #include <stdio.h>
 
-#include <errno.h>
-
-extern void test_for_multiple_definition();
-
 PUSH_STRUCT_PACK(1)
 typedef struct test_align_packed
 {
@@ -46,10 +42,34 @@ typedef struct node_t /* for testing linked list macros */
 
 #define RES_MEM_APPLICATION RES_MEM_GAME + RES_MEM_RENDERER + RES_MEM_PLATFORM
 
+/* proof-of-concept: defining memory sizes using x-macros */
+#define MEMORY_GAME \
+  X(ENTITIES, GIGABYTES(4)  ) \
+  X(SOUND,    MEGABYTES(2)  ) \
+  X(TEMP,     KILOBYTES(16) )
+
+#define X(name, memory) memory +
+const u64 MEMORY_OVERALL_GAME = MEMORY_GAME + 0;
+#undef X
+
+#define MEMORY_RENDERER \
+  X(TEXTURES, MEGABYTES(256) ) \
+  X(MESHES,   MEGABYTES(40)  )
+
+#define X(name, memory) memory +
+const u64 MEMORY_OVERALL_RENDERER = MEMORY_RENDERER + 0;
+#undef X
+
+#define MEMORY_APP \
+  X(GAME)          \
+  X(RENDERER)
+
+#define X(name) MEMORY_OVERALL_##name +
+//const u64 MEMORY_OVERALL_APP = MEMORY_APP + 0; /* error under msvc c17 */
+#undef X
+
 int main(int argc, char** argv)
 {
-    test_for_multiple_definition();
-
     /* TEST PLATFORM DETECTION */
     {
         const char* os = platform_os_string(platform_detect_os());
@@ -260,7 +280,7 @@ int main(int argc, char** argv)
         #if defined(BUILD_DEBUG) && defined(ARCH_X64)
         fixed_address = (void*) GIGABYTES(256); // 0x4000000000
         #endif
-        u8* buf                = (u8*) mem_reserve(fixed_address, buf_size_reserved);
+        u8* buf       = (u8*) mem_reserve(fixed_address, buf_size_reserved);
         ASSERT(buf);
         #if defined(BUILD_DEBUG) && defined(ARCH_X64)
         ASSERT(buf == fixed_address);
@@ -299,7 +319,7 @@ int main(int argc, char** argv)
 
     /* TEST ARENAS */
     {
-        mem_arena_t* arena = mem_arena_alloc(MEGABYTES(1));
+        mem_arena_t* arena = mem_arena_reserve(MEGABYTES(1));
         u8* arena_buf     = (u8*) mem_arena_push(arena, KILOBYTES(4));
         for (u32 i = 0; i < KILOBYTES(4); i++) { ASSERT(!arena_buf[i]); }
         mem_arena_pop_by(arena, KILOBYTES(1));
@@ -317,14 +337,21 @@ int main(int argc, char** argv)
         number_arr = ARENA_PUSH_ARRAY(arena, u32, 256);
         for (u32 i = 0; i < 256; i++) { ASSERT(!number_arr[i]); }
 
-        /* arena within an arena */
-        u8* sub_arena_buf     = (u8*) mem_arena_push(arena, KILOBYTES(1));
-        mem_arena_t* sub_arena = mem_arena_create(sub_arena_buf, KILOBYTES(1));
-        test_align_unpacked* struct_arr = ARENA_PUSH_ARRAY(arena, test_align_unpacked, 256);
-
         /* provoke an overflow */
         //mem_arena_push(&sub_arena, KILOBYTES(3));
         //mem_arena_push(&arena,     MEGABYTES(10));
+    }
+
+    /* TEST ARENA RESERVING & COMMITTING */
+    {
+        mem_arena_t* arena   = mem_arena_reserve(KILOBYTES(32));
+        u8* arena_buf_1      = (u8*) mem_arena_push(arena, KILOBYTES(4));
+        ASSERT(arena_buf_1);
+        for (u32 i = 0; i < KILOBYTES(4); i++) { ASSERT(!arena_buf_1[i]); }
+
+        u8* arena_buf_2      = (u8*) mem_arena_push(arena, KILOBYTES(16));
+        ASSERT(arena_buf_2);
+        for (u32 i = 0; i < KILOBYTES(16); i++) { ASSERT(!arena_buf_2[i]); }
     }
 
     /* TEST SUBARENAS */
@@ -337,6 +364,7 @@ int main(int argc, char** argv)
         mem_arena_t* game_arena     = mem_arena_subarena(base_arena, RES_MEM_GAME);
         ASSERT(game_arena);
 
+        // TODO find a way to turn overallocating the base arena into a compile time error
         //mem_arena_t* test_arena     = mem_arena_subarena(base_arena, 1); // should fail
 
         //u8* test_buf = (u8*) mem_arena_push(game_arena, KILOBYTES(5)); // push beyond pagesize
@@ -345,7 +373,7 @@ int main(int argc, char** argv)
 
     /* TEST LINKED LIST MACROS */
     {
-        mem_arena_t* arena = mem_arena_alloc(MEGABYTES(1));
+        mem_arena_t* arena = mem_arena_reserve(MEGABYTES(1));
         node_t* first  = (node_t*) mem_alloc(sizeof(node_t));
         first->data    = 1;
         node_t* second = ARENA_PUSH_STRUCT(arena, node_t);
