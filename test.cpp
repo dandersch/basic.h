@@ -1,1 +1,0 @@
-/home/da/dev/basic/test.c
