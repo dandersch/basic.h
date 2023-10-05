@@ -58,6 +58,11 @@
   #define TYPE_OF(e) STATIC_ASSERT(0, "TYPE_OF macro doesn't work w/ MSVC in C");
 #endif
 
+
+/* see
+   http://www.smallbulb.net/2018/809-reserve-virtual-memory
+ */
+
 /* memory is guaranteed to be initialized to zero */
 void* mem_reserve (void* at, u64 size);     /* pass NULL if location doesn't matter */
 b32   mem_commit  (void* ptr,   u64 size);
