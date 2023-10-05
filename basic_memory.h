@@ -1,6 +1,10 @@
 #pragma once
 
 /* common macros */
+// TODO is there a way to check if aaa is not a decayed array (i.e a pointer)? See
+//   https://stackoverflow.com/questions/16794900/validate-an-argument-is-array-type-in-c-c-pre-processing-macro-on-compile-time
+//   https://stackoverflow.com/questions/19452971/array-size-macro-that-rejects-pointers
+
 #define ARRAY_COUNT(arr)  (sizeof(arr)/sizeof(arr[0]))
 
 #if !defined(COMPILER_MSVC)
@@ -45,6 +49,10 @@
     #define DEFER_2(x, y) DEFER_1(x, y)
     #define DEFER_3(x)    DEFER_2(x, __COUNTER__)
     #define defer(code)   auto DEFER_3(_defer_) = defer_func([&](){code;})
+#else
+    // TODO add an ERROR() macro and change this to that
+    //#define defer(code) WARNING("No defer statement available.")
+    #define defer(code) STATIC_ASSERT(0, "defer macro not available.");
 #endif
 
 /* TYPE_OF macro for all compilers except MSVC in C-mode */
@@ -77,7 +85,7 @@ u64   mem_pagesize(); /* pagesize in bytes */
 
 /* helper macros */
 #define MEM_ZERO_OUT_STRUCT(s) mem_zero_out((s), sizeof(*(s)))
-#define MEM_ZERO_OUT_ARRAY(a)  mem_zero_out((a), sizeof(a))
+#define MEM_ZERO_OUT_ARRAY(a)  mem_zero_out((a), sizeof(a)) // TODO check if a is real array
 
 #ifdef BASIC_IMPLEMENTATION
 #if defined(PLATFORM_WIN32)
