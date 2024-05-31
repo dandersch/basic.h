@@ -4,9 +4,9 @@
 ; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
 ;
 [subrepo]
-	remote = https://github.com/dandersch/log.h.git
+	remote = git@github.com:dandersch/log.h.git
 	branch = main
-	commit = 3360a48eb9299f6cf590bc17642f1c573a592d6c
-	parent = 31c65a8f1f8188361f14b4f5a2863f6289eb5117
+	commit = b68534d0c931e89ca7152ad3ec6ca88cd467a1e9
+	parent = c3be15092de7e31d121dababbea8e3f82c205ea3
 	method = merge
 	cmdver = 0.4.6
