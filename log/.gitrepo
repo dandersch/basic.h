@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/dandersch/log.h.git
+	branch = main
+	commit = 3360a48eb9299f6cf590bc17642f1c573a592d6c
+	parent = 31c65a8f1f8188361f14b4f5a2863f6289eb5117
+	method = merge
+	cmdver = 0.4.6
