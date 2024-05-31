@@ -1,5 +1,7 @@
 #pragma once
 
+#undef ERROR // defined in wingdi.h as 0
+
 #if !defined(LOG_ENTRY_FILE)
 
   #define LOG_ENTRIES_SEVERITY \
@@ -44,8 +46,8 @@ extern int LOG_VARIABLE_NAME;
   #define LOG_COLOR_RED    ""
   #define LOG_COLOR_PURPLE ""
 #else
-  #define LOG_COLOR_OFF    "\033[0m"
-  #define LOG_COLOR_GRAY   "\e[38;5;245m"
+  #define LOG_COLOR_OFF    "\x1b[0m"
+  #define LOG_COLOR_GRAY   "\x1b[38;5;245m"
   #define LOG_COLOR_BLUE   "\x1b[94m"
   #define LOG_COLOR_CYAN   "\x1b[36m"
   #define LOG_COLOR_GREEN  "\x1b[32m"
@@ -154,7 +156,7 @@ enum
   #define LOG_ENTRY_SUBSYSTEM(name, value, string, color) name = LOG_SUBSYSTEM_##name ,
   #define LOG_ENTRY_CATEGORY(name, value, string, color)  name = LOG_CATEGORY_##name ,
   enum {
-      #include "log_entry_table.h"
+      #include LOG_ENTRY_FILE
   };
   #undef LOG_ENTRY_SEVERITY
   #undef LOG_ENTRY_SUBSYSTEM
