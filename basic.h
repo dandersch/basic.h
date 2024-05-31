@@ -41,3 +41,5 @@
 #include "basic_linkedlist.h"
 #include "basic_dynarr.h"
 //#include "basic_string.h"
+
+#include "log/log.h"

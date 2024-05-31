@@ -95,33 +95,3 @@
         }
     #endif
 #endif
-
-/* TODO Logger */
-//enum log_severity_e
-//{
-//    LOG_INFO,
-//    LOG_WARNING,
-//    LOG_CRITICAL,
-//    LOG_SEVERITY_COUNT,
-//};
-//
-//enum log_target_e
-//{
-//    LOG_CONSOLE,
-//    LOG_FILE,
-//    LOG_TARGET_COUNT,
-//};
-//
-//// TODO maybe use a macro with LOG(msg, severity, target, ...) printf(msg, __VA_ARGS__)
-//void debug_log(string_t str, log_severity_e severity, log_target_e target)
-//{
-//    switch (severity)
-//    {
-//    }
-//
-//    switch (target)
-//    {
-//      case LOG_CONSOLE: { printf("%s", string_null_terminate(str)); } break;
-//      case LOG_FILE: { } break;
-//    }
-//}
