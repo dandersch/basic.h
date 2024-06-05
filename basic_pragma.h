@@ -12,7 +12,7 @@
 //   ignored
 
 /* cross-platform #pragma's */
-#if defined(_MSC_VER) // NOTE: so we can be included before basic_platform.h
+#if defined(_MSC_VER) && !defined(__clang__) // NOTE: so we can be included before basic_platform.h
     #define DO_PRAGMA(x) __pragma(x)
 
     #define WARNING_TO_ENABLE(flag,code) DO_PRAGMA(warning(default : code))

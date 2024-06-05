@@ -70,7 +70,7 @@ enum
   #undef LOG_ENTRY_SEVERITY
 
   #define LOG_ENTRY_SEVERITY(name, value, string, color) value |
-  #define LOG_SEVERITY_MASK LOG_ENTRIES_SEVERITY LOG_ENTRIES_CATEGORY 0
+  #define LOG_SEVERITY_MASK LOG_ENTRIES_SEVERITY 0
   #ifdef LOG_ENTRY_FILE
     LOG_SEVERITY =
       #include LOG_ENTRY_FILE

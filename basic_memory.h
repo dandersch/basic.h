@@ -1,12 +1,5 @@
 #pragma once
 
-/* common macros */
-// TODO is there a way to check if aaa is not a decayed array (i.e a pointer)? See
-//   https://stackoverflow.com/questions/16794900/validate-an-argument-is-array-type-in-c-c-pre-processing-macro-on-compile-time
-//   https://stackoverflow.com/questions/19452971/array-size-macro-that-rejects-pointers
-
-#define ARRAY_COUNT(arr)  (sizeof(arr)/sizeof(arr[0]))
-
 #if !defined(COMPILER_MSVC)
     #define OFFSET_OF(type, member) __builtin_offsetof(type, member)
 #else
@@ -31,29 +24,6 @@
 #define ALIGN_TO_NEXT_PAGE(val) NEXT_ALIGN_POW2((uintptr_t) val, 4096)
 #define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, 4096)
 
-/* add a defer statement for C++11 and up */
-#if defined(LANGUAGE_CPP) && (STANDARD_VERSION >= 2011)
-    template <typename F>
-    struct privDefer {
-        F f;
-        privDefer(F f_in) : f(f_in) {}
-        ~privDefer() { f(); }
-    };
-
-    template <typename F>
-    privDefer<F> defer_func(F f) {
-        return privDefer<F>(f);
-    }
-
-    #define DEFER_1(x, y) x##y
-    #define DEFER_2(x, y) DEFER_1(x, y)
-    #define DEFER_3(x)    DEFER_2(x, __COUNTER__)
-    #define defer(code)   auto DEFER_3(_defer_) = defer_func([&](){code;})
-#else
-    // TODO add an ERROR() macro and change this to that
-    //#define defer(code) WARNING("No defer statement available.")
-    #define defer(code) STATIC_ASSERT(0, "defer macro not available.");
-#endif
 
 /* TYPE_OF macro for all compilers except MSVC in C-mode */
 #if defined(LANGUAGE_CPP)
