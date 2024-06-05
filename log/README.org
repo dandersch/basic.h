@@ -1,8 +1,7 @@
 #+TITLE: log.h
 
 A single-header C/C++ logging library that allows custom definitions of logging
-severities, subsystems and categories - either in a separate file or inside the
-header file.
+severities, subsystems and categories through the use of X-Macros.
 
 [[./.github/image.png]]
 
@@ -10,34 +9,81 @@ header file.
 After copying ~log.h~ into your project:
 
 #+BEGIN_SRC C :includes "./log.h"
+#define LOG_ENTRIES_SEVERITY \
+LOG_ENTRY_SEVERITY(   INFO,         (1<< 0),    "[INFO ]",     LOG_COLOR_GREEN   )\
+LOG_ENTRY_SEVERITY(   WARN,         (1<< 1),    "[WARN ]",     LOG_COLOR_YELLOW  )\
+LOG_ENTRY_SEVERITY(   ERROR,        (1<< 2),    "[ERROR]",     LOG_COLOR_RED     )\
+LOG_ENTRY_SEVERITY(   EMPTY0,             0,    "[     ]",     LOG_COLOR_GRAY    )
+#define LOG_ENTRIES_SUBSYSTEM \
+LOG_ENTRY_SUBSYSTEM(  PLATFORM,     (1<< 8),    "[PLATF]",     LOG_COLOR_CYAN    )\
+LOG_ENTRY_SUBSYSTEM(  AUDIO,        (1<< 9),    "[AUDIO]",     LOG_COLOR_GREEN   )\
+LOG_ENTRY_SUBSYSTEM(  VIDEO,        (1<<10),    "[VIDEO]",     LOG_COLOR_RED     )\
+LOG_ENTRY_SUBSYSTEM(  EMPTY1,             0,    "[     ]",     LOG_COLOR_GRAY    )
+#define LOG_ENTRIES_CATEGORY \
+LOG_ENTRY_CATEGORY(   INIT,         (1<<18),    "[INIT ]",     LOG_COLOR_GRAY    )\
+LOG_ENTRY_CATEGORY(   SHUTDOWN,     (1<<19),    "[SHUTD]",     LOG_COLOR_GRAY    )\
+LOG_ENTRY_CATEGORY(   EMPTY2,             0,    "[     ]",     LOG_COLOR_GRAY    )
+/* entry              name            value      string        color             */
+
 #include "log.h"
 
 int log_verbosity_level = LOG_EVERYTHING;
 
 int main()
 {
-    LOG(TRACE|PLATFORM|INIT,"Started engine");
-    LOG(INFO|VIDEO|INIT, "Successfully initialized video subsystem");
-    LOG(AUDIO|WARN|ACTIVATE, "Insufficient memory for normal-sized buffer");
-    LOG(FATAL|NETWORK|INIT, "Couldn't init network. Aborting...");
+    /* usage */
+    LOG(INFO|PLATFORM|INIT,      "Started engine");
+    LOG(VIDEO|INIT,              "Successfully initialized video subsystem");
+
+    unsigned int buffer_size = 1024;
+    LOG(AUDIO|WARN|INIT,         "Insufficient memory for buffer of size %u", buffer_size);
+
+    /* only log warnings or worse from here */
+    LOG_SET_MASK(WARN | ERROR | FATAL); // short form of log_verbosity_level = LOG_SEVERITY_WARN | LOG_SEVERITY_ERROR | LOG_SEVERITY_FATAL;
+
+    LOG(INFO|VIDEO,              "Won't be displayed");
+    LOG(FATAL|PLATFORM|SHUTDOWN, "Fatal error occured. Aborting...");
 }
 #+END_SRC
 
 Output:
 #+BEGIN_SRC
-05:38:07 [TRACE][PLATF][INIT ]       main.c:  11 Started engine
-05:38:07 [INFO ][VIDEO][INIT ]       main.c:  12 Successfully initialized video subsystem
-05:38:07 [WARN ][AUDIO][ACTIV]       main.c:  13 Insufficient memory for normal-sized buffer
-05:38:07 [FATAL][NETWK][INIT ]       main.c:  14 Couldn't init network. Aborting...
+19:07:29 [INFO ][PLATF][INIT ]       main.c:  37 Started engine
+19:07:29 [     ][VIDEO][INIT ]       main.c:  38 Successfully initialized video subsystem
+19:07:29 [WARN ][AUDIO][INIT ]       main.c:  39 Insufficient memory for normal-sized buffer
+19:07:29 [FATAL][PLATF][SHUTD]       main.c:  40 Fatal error occured. Aborting...
 #+END_SRC
 
-* Using your own definitions in a separate file
-#+BEGIN_SRC C
-#define LOG_ENTRY_FILE "log_entry_table.h" // filename of your choice
+Customize the macros to define your own severities, subsystems and categories
+and how each one should be displayed. Here is what every argument to the macro
+means:
+
+#+BEGIN_SRC
+LOG_ENTRY(name, value,  string, color)
+#+END_SRC
+
+- ~LOG_ENTRY~: The X-Macro. Either ~LOG_ENTRY_SEVERITY~, ~LOG_ENTRY_SUBSYSTEM~, ~LOG_ENTRY_CATEGORY~
+- ~name~: Symbol name of your choice. Will be prefixed in the header file, but can
+  be used unprefixed inside the ~LOG(...)~ macro
+- ~value~: Bit that identifies the entry in the bitfield. Must be unique for every
+  entry.
+- ~string~: String to output for that entry in the log line
+- ~color~: What color that string should be
+
+You can also move all macro definitions to a separate file. Define
+~LOG_ENTRY_FILE~ to be the path to that file before including ~log.h~:
+
+#+BEGIN_SRC C :includes "./log.h"
+#define LOG_ENTRY_FILE "log_entry_table.h"
 #include "log.h"
 #+END_SRC
 
-The ~log_entry_table.h~ header should follow the following structure:
+* Using a plain entry file
+By default, the ~LOG_ENTRY_FILE~ needs to contain definitions of certain macros
+and manually assigned bit values. You can have a more simple file structure by
+defining ~LOG_USE_PLAIN_ENTRY_FILE~ and defining ~LOG_ENTRY_FILE~ to that file
+before including ~log.h~. The plain entry should look like this:
+
 #+BEGIN_SRC C :includes
 /* entry              name          value             string         color            */
 LOG_ENTRY_SEVERITY(   TRACE,        (1<<__LINE__),    "[TRACE]",     LOG_COLOR_GRAY    )
@@ -60,13 +106,8 @@ LOG_ENTRY_SUBSYSTEM(  EMPTY1,                   0,    "[     ]",     LOG_COLOR_G
 LOG_ENTRY_CATEGORY(   EMPTY2,                   0,    "[     ]",     LOG_COLOR_GRAY    )
 #+END_SRC
 
-Explanation of every field:
-- ~entry~: The X-Macro. Either ~LOG_ENTRY_SEVERITY~, ~LOG_ENTRY_SUBSYSTEM~, ~LOG_ENTRY_CATEGORY~
-- ~name~: Symbol name. Will be prefixed in the header file, but can be used
-  unprefixed inside the ~LOG(...)~ macro
-- ~value~: Bit that identifies the entry in the bitfield
-- ~string~: String to output for that entry in the log line
-- ~color~: What color that string should be
+With this file structure, you can use the ~__LINE__~ macro to avoid manually
+assigning bits.
 
 Having the logging definitions in a separate file eliminates the possibility of
 having shortened names in the ~LOG(..)~ macro like above (due to restrictions with
@@ -78,11 +119,13 @@ by defining ~LOG_USE_SHORT_NAMES_GLOBALLY~ before including ~"log.h"~
 
 #+BEGIN_SRC C :includes "log.h"
 #define LOG_ENTRY_FILE "log_entry_table.h"
+#define LOG_USE_PLAIN_ENTRY_FILE
 #define LOG_USE_SHORT_NAMES_GLOBALLY
 #include "log.h"
 #+END_SRC
 
-However, this is more likely to cause name collisions, so beware.
+This is more likely to cause name collisions, but since you are in full control
+of what the symbol names are, this can be easily mitigated.
 
 * Configuration
 #+BEGIN_SRC C
@@ -100,15 +143,19 @@ However, this is more likely to cause name collisions, so beware.
 
 /* allow global usage of e.g. TRACE instead of LOG_SEVERITY_TRACE and so on */
 #define LOG_USE_SHORT_NAMES_GLOBALLY
+
+/* use a plain entry file (gets #included in log.h instead of using macro definitions) */
+#define LOG_USE_PLAIN_ENTRY_FILE
 #+END_SRC
 
 * Limitations
 - Because the implementation is using a bitfield based on the entries in an
   enum, the amount of log entries (i.e. the sum of severity levels, subsystems
-  and categories) *cannot be more than 32*.
-- If you are specifying your log entries in the header-file, you have to specify
-  its value (i.e. the bit that is set for it) yourself. If using a separate
-  file, you can use the ~__LINE__~ macro to do this job for you.
+  and categories) *cannot be more than 32*. More specifically, no entry can have a
+  value set higher than (1<<32).
+- If you are specifying your log entries, you have to specify its value (i.e.
+  the bit that is set for it) yourself. If using a plain entry file, you can use
+  the ~__LINE__~ macro to do this job for you.
 
 * About
 This is essentially an [[https://en.wikipedia.org/wiki/X_Macro][X-Macro]] version of the [[https://github.com/MetricPanda/loggen][loggen]] library, which eliminates
