@@ -6,7 +6,7 @@
 [subrepo]
 	remote = git@github.com:dandersch/log.h.git
 	branch = main
-	commit = 287808e6da4bcfa7c9c244186b6f3c1342cd4b92
-	parent = 935a938da6e7b2975bcae8b63aafab16157c8bdf
+	commit = 2c9bc5d336fe64750dd7f103c17e0e817c68c8e0
+	parent = 5cb9f6a8aa0b1e43dab5ba6e4dc03acfb0e6b708
 	method = merge
 	cmdver = 0.4.6
