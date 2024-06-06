@@ -55,8 +55,13 @@ typedef enum operating_system_e
 #elif defined(__clang__ ) // NOTE for clang++ on windows
     #define COMPILER_CLANG
 
+/* TODO untested */
+#elif defined(__TINYC__)
+    #define COMPILER_TCC
+
 #elif defined(_MSC_VER)
     #define COMPILER_MSVC
+
 #else
     #error "No supported compiler detected."
 #endif
@@ -76,8 +81,7 @@ typedef enum operating_system_e
 
 /* define export declarations for .dll & .so files */
 // NOTE: untested
-// TODO COMPILER_CLANG?
-#ifdef COMPILER_GCC
+#if defined(COMPILER_GCC)
     // NOTE GCC exports every symbol to the ELF by default (so no keyword would be needed), 
     // unless -fvisibility=hidden is specified, then below keyword is needed for exporting
     #if __GNUC__ >= 4 // NOTE: taken from SDL
@@ -92,6 +96,8 @@ typedef enum operating_system_e
 #elif defined(COMPILER_MINGW)
     // NOTE apparently you can use both __attribute__() & __declspec() with mingw
     #define EXPORT __declspec(dllexport)
+#elif defined(COMPILER_TCC) && defined(PLATFORM_WIN32)
+    #define EXPORT __attribute__(dllexport)
 #endif
 
 /* define c calling convention macro */
@@ -107,6 +113,8 @@ typedef enum operating_system_e
 #elif defined(COMPILER_CLANG)
     // TODO define CDECL for COMPILER_CLANG, break compilation in the meantime
     #define CDECL  not_defined
+#elif defined(COMPILER_TCC)
+    #define CDECL __attribute__(cdecl) // TODO untested
 #endif
 
 #if defined(__cplusplus)
