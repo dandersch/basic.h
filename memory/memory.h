@@ -41,9 +41,12 @@ size_t mem_pagesize(); /* pagesize in bytes */
 #define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, mem_pagesize())
 /* NOTE mem_pagesize() is called for every commit, could be hardcoded to 4096 */
 
+// TODO stash away relevant system info like pagesize and commit granularity in
+// some readonly global state
+
 #ifdef MEMORY_IMPLEMENTATION
 
-/* NOTE: alloc & free are the same for all platforms and just wrap malloc for now (but the memory is zeroed out) */
+/* NOTE: alloc & free are the same for all platforms and just wrap malloc to zero out the memory */
 #include <stdlib.h> // for malloc
 void* mem_alloc(size_t size) { void* mem = malloc(size); mem_zero_out(mem, size); return mem; }
 void  mem_free(void* ptr) { free(ptr); }
@@ -79,6 +82,7 @@ void mem_copy(void* dst, void* src, size_t size_in_bytes) {
 size_t  mem_pagesize() {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
+    // TODO also get and store dwAllocationGranularity
     return si.dwPageSize;
 }
 
@@ -109,14 +113,36 @@ size_t  mem_pagesize() {
 void* mem_reserve(void* at, size_t size) {
     /* try to get a fixed memory address if passed in. User has to check if at==mem to see if it worked */
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
-    if (at) { flags |= MAP_FIXED; }
+    if (at) { flags |= MAP_FIXED; } // TODO maybe use MAP_FIXED_NOREPLACE to avoid taking malloc'ed space
     void* mem = mmap(at, size, PROT_NONE, flags, -1, 0);
     if (mem == MAP_FAILED) { mem = NULL; }
     return mem;
 }
 int mem_commit(void* ptr, size_t size) {
-    /* TODO mprotect fails if addr is not aligned to a page boundary and if
+
+    /* NOTE mprotect fails if addr is not aligned to a page boundary and if
      * length (size) is not a multiple of the page size as returned by sysconf(). */
+
+    // TODO addr needs to be aligned to page, but size does not:
+    // mprotect() changes the access protections for the calling process’s
+    // memory pages containing any part of the address range in the interval
+    // [addr, addr+len-1]
+
+    //here's the pseduo code for doing alignment inside the allocator. you only
+    //need to round up the size, which guarantees that commit_ptr will be
+    //automatically page aligned, so no round down is needed.
+    //
+    //if (a->offset > a->commit) {
+    //    Size bytes = a->offset - a->commit;
+    //    bytes += -bytes & (os_global.page_size - 1); // round up to page size
+    //    // note: a->commit is guranteed to be page aligned since bytes
+    //    // is always page sized
+    //    if (!os_commit(a->commit, bytes)) {
+    //        oom();
+    //    }
+    //    a->commit += bytes;
+    //}
+
     uintptr_t commit_begin = (uintptr_t) ptr;
     uintptr_t commit_end   = (uintptr_t) ptr + size;
     commit_begin           = ALIGN_TO_PREV_PAGE(commit_begin);
@@ -124,7 +150,7 @@ int mem_commit(void* ptr, size_t size) {
     size                   = commit_end - commit_begin;
     ptr                    = (void*) commit_begin;
 
-    size += mem_pagesize(); /* TODO: overcommitting here by 1 pagesize solves some edge cases - find out why */
+    size += mem_pagesize();
 
     MEM_ASSERT(!(size % mem_pagesize()));
     MEM_ASSERT(!(((uintptr_t) ptr) % mem_pagesize()));
