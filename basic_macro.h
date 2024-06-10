@@ -1,7 +1,11 @@
 #pragma once
 
-/* define common, useful macros */
-
+/* define common, useful macros such as
+ *    ARRAY_COUNT(arr) : returns count of elements in array and 0 for pointers
+ *    scoped_begin_end(start, end) : runs start at begin and end at end of the following scope
+ *    scoped_defer(...) : runs all given expressions at the end of the following scope in the order given
+ *    defer(...) : runs given code at end of the scope (only available in C++11 and up)
+ */
 
 /* macros to check if array is real array (and not just a pointer, i.e. decayed array) */
 #define IS_INDEXABLE(arg) (sizeof(arg[0]))
@@ -37,7 +41,7 @@
     for (int UNIQUE_VAR(_i_) = 0; !UNIQUE_VAR(_i_); (UNIQUE_VAR(_i_) += 1), __VA_ARGS__)
 
 /* add a (real) defer statement for C++11 and up */
-#if defined(LANGUAGE_CPP) && (STANDARD_VERSION >= 2011)
+#if defined(__cplusplus) && ((__cplusplus >= 201100) || (_MSVC_LANG >= 201100))
     template <typename F>
     struct privDefer {
         F f;
@@ -54,8 +58,4 @@
     #define DEFER_2(x, y) DEFER_1(x, y)
     #define DEFER_3(x)    DEFER_2(x, __COUNTER__)
     #define defer(code)   auto DEFER_3(_defer_) = defer_func([&](){code;})
-#else
-    // TODO add an ERROR() macro and change this to that
-    //#define defer(code) WARNING("No defer statement available.")
-    #define defer(code) STATIC_ASSERT(0, "defer macro not available.");
 #endif
