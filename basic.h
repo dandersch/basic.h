@@ -17,7 +17,7 @@
    https://nullprogram.com/blog/2023/02/15/
  */
 
-#include "platform.h"
+#include "platform/platform.h"
 
 #include "buildtype.h" /* depends on detected buildtype from platform.h */
 #include "maths.h"     /* depends on typedefs from platform.h */
