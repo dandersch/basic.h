@@ -28,26 +28,21 @@
 
 #include "basic_math.h"      // depends on basic_platform.h
 
-
 #ifdef BASIC_IMPLEMENTATION
   #define MEMORY_IMPLEMENTATION
 #endif
 #include "memory/memory.h"    // standalone
 
-
-//#define MEM_ARENA_OS_ALLOC(size) mem_alloc(size)
-//#define MEM_ARENA_OS_FREE(ptr) mem_free(size)
-#define MEM_ARENA_OS_RESERVE(size)      mem_reserve(NULL, size)
-#define MEM_ARENA_OS_COMMIT(ptr,size)   mem_commit(ptr, size)
-#define MEM_ARENA_OS_RELEASE(ptr,size)  mem_release(ptr, size)
-#define MEM_ARENA_OS_DECOMMIT(ptr,size) mem_decommit(ptr, size)
-
 #ifdef BASIC_IMPLEMENTATION
   #define MEM_ARENA_IMPLEMENTATION
+  //#define MEM_ARENA_OS_ALLOC(size) mem_alloc(size)
+  //#define MEM_ARENA_OS_FREE(ptr) mem_free(size)
+  #define MEM_ARENA_OS_RESERVE(size)      mem_reserve(NULL, size)
+  #define MEM_ARENA_OS_COMMIT(ptr,size)   mem_commit(ptr, size)
+  #define MEM_ARENA_OS_RELEASE(ptr,size)  mem_release(ptr, size)
+  #define MEM_ARENA_OS_DECOMMIT(ptr,size) mem_decommit(ptr, size)
 #endif
-
-#include "basic_arena.h"     // standalone
-
+#include "arena/arena.h"     // standalone
 
 #include "basic_dynarr.h"    // depends on basic_memory.h
 
