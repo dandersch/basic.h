@@ -27,23 +27,6 @@ typedef double    f64;
 
 // typedef uintptr_t umm; /* stand-in for void* */
 
-/* redefine the static keyword for use in specific contexts */
-#if !defined(internal)
-    #define internal static // for 'static' functions
-#else
-    #pragma message("'internal' already defined. Make sure it's set to 'static'.")
-#endif
-#if !defined(local)
-    #define local    static // for 'static' variables inside a function
-#else
-    #pragma message("'local' already defined. Make sure it's set to 'static'.")
-#endif
-#if !defined(global)
-    #define global   static // for 'static' variables w/ global scope in a unity build
-#else
-    #pragma message("'global' already defined. Make sure it's set to 'static'.")
-#endif
-
 /* numerical limits */
 #include <float.h>  // for FLT_MAX/MIN
 #define U8_MIN  0
