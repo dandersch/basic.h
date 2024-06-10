@@ -36,7 +36,7 @@
   #define MEM_ARENA_OS_RELEASE(ptr,size)  mem_release(ptr, size)
   #define MEM_ARENA_OS_DECOMMIT(ptr,size) mem_decommit(ptr, size)
 #endif
-#include "arena/arena.h"
+#include "memory/mem_arena.h"
 
 #include "basic_dynarr.h"    /* depends on basic_memory.h */
 
