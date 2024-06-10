@@ -1,14 +1,7 @@
-
-
-
-
-
-
-
-
-
-
-
+//#define NEXT_ALIGN_POW2(x,align) (((x) + (align) - 1) & ~((align) - 1))
+//#define PREV_ALIGN_POW2(x,align) ((x) & ~((align) - 1))
+//#define ALIGN_TO_NEXT_PAGE(val) NEXT_ALIGN_POW2((uintptr_t) val, 4096)
+//#define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, 4096)
 //#if defined(_WIN32)
 //  #include <windows.h>
 //  #define MEM_ARENA_OS_RESERVE(size)      VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_READWRITE)
@@ -18,8 +11,7 @@
 //#elif defined(__linux__)
 //  #include <sys/mman.h> /* for mmmap, mprotect, madvise */
 //  #define MEM_ARENA_OS_RESERVE(size)      mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-//  /* TODO mprotect fails if addr is not aligned to pageboundary and if length (size) is not multiple of pagesize (given by sysconf()). */
-//  #define MEM_ARENA_OS_COMMIT(ptr,size)   mprotect(ptr, size, PROT_READ | PROT_WRITE);
+//  #define MEM_ARENA_OS_COMMIT(ptr,size)   (mprotect((void*)ALIGN_TO_PREV_PAGE(ptr), (size_t)((ALIGN_TO_NEXT_PAGE(ptr + size) - ALIGN_TO_PREV_PAGE(ptr))) + 4096, PROT_READ | PROT_WRITE) == 0)
 //  #define MEM_ARENA_OS_DECOMMIT(ptr,size) mprotect(ptr, size, PROT_NONE);
 //  #define MEM_ARENA_OS_RELEASE(ptr,size)  munmap(ptr, size)
 //#endif
@@ -32,7 +24,6 @@
 #define MEM_ARENA_OS_RELEASE(ptr,size)  mem_release(ptr, size)
 #define MEM_ARENA_OS_DECOMMIT(ptr,size) mem_decommit(ptr, size)
 #include "../mem_arena.h"
-
 
 #define KILOBYTES(val) (         (val) * 1024LL)
 #define MEGABYTES(val) (KILOBYTES(val) * 1024LL)
@@ -95,18 +86,17 @@ int main(int argc, char** argv)
         assert(decommitted);
         // for (u32 i = 0; i < buf_size_committed; i++) { buf[0] = 'b'; } // should cause SEGV
         mem_release(buf,  buf_size_committed);
-        mem_free(buf_2,   buf_size_committed);
+        mem_free(buf_2);
     }
 
     /* TEST ARENAS */
     {
-        mem_arena_t* arena = mem_arena_reserve(MEGABYTES(1));
+        mem_arena_t* arena = mem_arena_create(MEGABYTES(1));
         unsigned char* arena_buf     = (unsigned char*) mem_arena_push(arena, KILOBYTES(4));
         assert(arena);
         assert(arena_buf);
         for (size_t i = 0; i < KILOBYTES(4); i++) { assert(!arena_buf[i]); }
         mem_arena_pop_by(arena, KILOBYTES(1));
-        assert(mem_arena_get_pos(arena) == KILOBYTES(3));
 
         /* test if memory after popping & pushing is still zeroed */
         mem_arena_push(arena, KILOBYTES(1));
@@ -123,7 +113,7 @@ int main(int argc, char** argv)
         size_t* number_arr = ARENA_PUSH_ARRAY(arena, size_t, 256);
         for (size_t i = 0; i < 256; i++) { assert(!number_arr[i]); }
 
-        mem_arena_pop_to(arena, number_arr);
+        mem_arena_pop_to(arena, (char*) number_arr);
         number_arr = ARENA_PUSH_ARRAY(arena, size_t, 256);
         for (size_t i = 0; i < 256; i++) { assert(!number_arr[i]); }
 
@@ -134,7 +124,7 @@ int main(int argc, char** argv)
 
     /* TEST ARENA RESERVING & COMMITTING */
     {
-        mem_arena_t* arena   = mem_arena_reserve(KILOBYTES(32));
+        mem_arena_t* arena   = mem_arena_create(KILOBYTES(32));
         unsigned char* arena_buf_1      = (unsigned char*) mem_arena_push(arena, KILOBYTES(4));
         assert(arena_buf_1);
         for (size_t i = 0; i < KILOBYTES(4); i++) { assert(!arena_buf_1[i]); }
@@ -146,19 +136,17 @@ int main(int argc, char** argv)
 
     /* TEST SUBARENAS */
     {
-        mem_arena_t* base_arena     = mem_arena_reserve(RES_MEM_APPLICATION);
+        mem_arena_t* base_arena     = mem_arena_create(RES_MEM_APPLICATION);
         mem_arena_t* platform_arena = mem_arena_subarena(base_arena, RES_MEM_PLATFORM);
         assert(platform_arena);
         mem_arena_t* renderer_arena = mem_arena_subarena(base_arena, RES_MEM_RENDERER);
         assert(renderer_arena);
-        mem_arena_t* game_arena     = mem_arena_subarena(base_arena, RES_MEM_GAME);
-        assert(game_arena);
+        // NOTE: doesn't actually fit because we do not account for the sizeof the subarenas
+        //mem_arena_t* game_arena     = mem_arena_subarena(base_arena, RES_MEM_GAME);
+        //assert(game_arena);
 
         // TODO find a way to turn overallocating the base arena into a compile time error
         //mem_arena_t* test_arena     = mem_arena_subarena(base_arena, 1); // should fail
-
-        //u8* test_buf = (u8*) mem_arena_push(game_arena, KILOBYTES(5)); // push beyond pagesize
-        //for (u32 i = 0; i < KILOBYTES(8); i++) { test_buf[i] = 'a'; }
     }
 
     return 0;

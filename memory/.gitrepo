@@ -6,7 +6,7 @@
 [subrepo]
 	remote = git@github.com:dandersch/mem_arena.h.git
 	branch = main
-	commit = a96925f58f2288b7b532057cd098216de00c2c7b
-	parent = 1175656a2dfce35bc833cea20a33ce95d016174a
+	commit = 7cfef160da72b3ba9ba219c3ff59078c7f92d333
+	parent = 539d7eb5add3873078c7a70a476a2fbc3c8cf6af
 	method = merge
 	cmdver = 0.4.6
