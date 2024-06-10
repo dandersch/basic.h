@@ -24,8 +24,6 @@
 
 #include "basic_platform.h"
 
-#include "basic_debug.h"     // perhaps merge into basic_platform.h
-
 #include "basic_buildtype.h" // depends on basic_platform.h  TODO maybe rename to basic_build.h
 
 #include "basic_types.h"     // maybe merge

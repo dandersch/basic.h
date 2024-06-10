@@ -4,20 +4,34 @@
  * includes detection of the OS, compiler, architecture, language std and
  * creates appropriate #defines for those platforms + some runtime detection
  * functions. Here are the most important #defines:
+ *
  * - PLATFORM_{WIN32|LINUX|MACOS}
  * - COMPILER_{GCC|CLANG|MINGW|MSVC|TCC}
  * - LANGUAGE_{C|CPP}
  * - STANDARD_{C89|C99|C11|C17|Cxx98|Cxx03|Cxx11|Cxx14|Cxx17|Cxx20}
  * - STANDARD_VERSION: Integer between 1989 and 2020
+ *
  * - EXPORT: for export declaration, syntax: EXPORT void func()
  * - CDECL:  c calling convention, syntax: void CDECL func()
+ * - EXT_C:   extern "C" to prevent C++ name mangling
+ *
  * - thread_local: crossplatform thread_local specifier
- * - BUILD_{DEBUG|RELEASE|CUSTOM}
+ *
+ * - BUILD_{DEBUG|RELEASE|CUSTOM}: detected build type
+ *
  * - DO_PRAGMA: cross-platform #pragma's
  * - WARNING_TO_{ENABLE|ERROR|IGNORE}(flag,code): What to do with a warning
  * - {PUSH|POP}_WARNINGS(): Open/close a scope in which to enable/ignore/error warnings
  * - WARNING(msg) : Macro form of #warning "msg", can be used in other macros
  * - {PUSH|POP}_STRUCT_PACK(n): Open/close a scope in which all structs have alignment n
+ *
+ * - DEBUG_BREAK(): portable debug_break()
+ * - ASSERT(expr): portable assert
+ * - UNREACHABLE(msg, ...): for unreachable code
+ * - UNIMPLEMENTED: for unimplemented code
+ * - DEPRECATED: for declaring functions deprecated (TODO)
+ * - STATIC_ASSERT(expr,msg): portable static_assert
+ * - debug_running_under_debugger(): runtime debugger detection
  */
 
 /* os detection */
@@ -151,6 +165,10 @@
     #endif
 #else
     #warning "Language not detected (C or C++)"
+#endif
+
+#ifdef LANGUAGE_CPP
+    #define EXT_C extern "C"  /* NOTE: untested */
 #endif
 
 /* thread local storage macro */
@@ -371,4 +389,96 @@ inline static const char* platform_compiler_string(compiler_e compiler)
 
     #define PUSH_STRUCT_PACK(n)
     #define POP_STRUCT_PACK()
+#endif
+
+/* asserts */
+#ifdef COMPILER_MINGW
+    #define _POSIX // needed for mingw to include SIGTRAP
+#endif
+
+#include <stdio.h>  // for fprintf, stderr TODO maybe let user provide a PRINT macro
+
+// NOTE way to check for builtins: __has_builtin(__builtin_debugtrap)
+
+// here a list of ways to implement a DEBUG_BREAK macro and on what OS+compiler they work
+// see https://github.com/scottt/debugbreak for more info
+//   __builtin_debugtrap();              linux: clang(++)                   windows: clang-cl.exe clang(++)
+//   __builtin_trap();                   linux: clang(++) gcc(++) mingw(++) windows: clang(++) clang-cl.exe
+//   #include <signal.h> raise(SIGTRAP); linux: clang(++) gcc(++) mingw(++) windows: none
+//   DebugBreak()                        linux: none                        windows: cl.exe clang-cl.exe
+//   __debugbreak()                      linux: none                        windows: cl.exe clang-cl.exe clang(++)
+//   __asm__ volatile("int $0x03");      trap instruction, x86 specific
+#ifdef COMPILER_MSVC
+    #define DEBUG_BREAK() __debugbreak()
+#else
+    #if defined(ARCH_X86) || defined(ARCH_X64)
+        #define DEBUG_BREAK() __asm__ volatile("int $0x03")
+    #else
+        #warning "No DEBUG_BREAK() defined for this architecture."
+    #endif
+#endif
+
+// NOTE: __func__ seems to be supported everywhere (alternative in case: __FUNCTION__)
+#define _ASSERT_STRING "Assert failed for '%s' in file '%s', function: '%s' at line '%d'\n"
+#define ASSERT(expr)                                                      \
+if (expr) { }                                                             \
+else                                                                      \
+{                                                                         \
+    fprintf(stderr, _ASSERT_STRING, #expr, __FILE__, __func__, __LINE__); \
+    DEBUG_BREAK();                                                        \
+}
+
+// TODO try to use __builtin_unreachable
+#define UNREACHABLE(msg, ...) do { fprintf(stderr,msg,##__VA_ARGS__); ASSERT(0); } while (0)
+
+#define UNIMPLEMENTED UNREACHABLE("Call to unimplemented function %s", __FUNCTION__)
+
+/* TODO compile-time warning for deprecated functions. Usage: DEPRECATED int my_func() { } */
+#if defined(LANGUAGE_CPP)
+  /* works with GCC, G++, CLANG++, MSVC++, CLANG++.exe */
+  #define DEPRECATED(msg) [[deprecated(msg)]]
+#elif defined(LANGUAGE_C) && !defined(COMPILER_MSVC)
+  /* works with GCC, G++, CLANG++, CLANG, CLANG.exe, CLANG++.exe */
+  #define DEPRECATED(msg) __attribute__((error(msg)))
+#else
+  /* no equivalent when compiling ".c" files with msvc */
+  #define DEPRECATED WARNING("no DEPRECATED macro available")
+#endif
+
+/* static_assert */
+#if defined(LANGUAGE_CPP) && STANDARD_VERSION >= 2011
+    #define STATIC_ASSERT(expr, msg) static_assert(expr, msg) /* C++11 built-in static_assert */
+#elif defined(LANGUAGE_C) && STANDARD_VERSION >= 2011
+    #define STATIC_ASSERT(expr, msg) _Static_assert(expr, msg)
+#else
+    // portable static_assert, but message string is lost
+    #define STATIC_ASSERT(expr, msg) typedef char static_assertion[(expr)?1:-1]
+#endif
+
+/* debugger runtime detection */
+#if defined(BUILD_DEBUG)
+    #if defined(PLATFORM_WIN32)
+        //#include <debugapi.h>
+        #include <windows.h>
+        static int debug_running_under_debugger()
+        {
+            return IsDebuggerPresent();
+        }
+    #else
+        #include <sys/ptrace.h>
+        static int debug_running_under_debugger()
+        {
+            static int debugger_detected;
+            static int debugger_present = 0;
+            if (!debugger_detected)
+            {
+                debugger_detected = 1;
+                debugger_present = (ptrace(PTRACE_TRACEME, 0, 0, 0) == -1);
+            }
+            return debugger_present;
+        }
+    #endif
+#else
+    /* NOTE we assume we don't run under a debugger when not built with debug information */
+    static int debug_running_under_debugger() { return 0; }
 #endif
