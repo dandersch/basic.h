@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:dandersch/mem_arena.h.git
+	branch = main
+	commit = a96925f58f2288b7b532057cd098216de00c2c7b
+	parent = 1175656a2dfce35bc833cea20a33ce95d016174a
+	method = merge
+	cmdver = 0.4.6
