@@ -22,8 +22,7 @@
    https://nullprogram.com/blog/2023/02/15/
  */
 
-#include "basic_platform.h"  // Maybe merge
-#include "basic_pragma.h"    // these two
+#include "basic_platform.h"
 
 #include "basic_debug.h"     // perhaps merge into basic_platform.h
 
