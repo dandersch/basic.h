@@ -1,6 +1,6 @@
 #pragma once
 
-#if !defined(COMPILER_MSVC)
+#if !defined(COMPILER_MSVC) && !defined(COMPILER_TCC)
     #define OFFSET_OF(type, member) __builtin_offsetof(type, member)
 #else
     #define OFFSET_OF(s,m) ((size_t)&(((s*)0)->m))

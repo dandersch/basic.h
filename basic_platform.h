@@ -27,7 +27,7 @@ typedef enum operating_system_e
 // NOTE: maybe rename these to OP_SYS_WIN32 or similar...
 #if defined(_WIN32)
     #define PLATFORM_WIN32
-#elif defined(__gnu_linux__)
+#elif defined(__gnu_linux__) || defined(__linux__)
     #define PLATFORM_LINUX
 #elif defined(__APPLE__) && defined(__MACH__)
     #define PLATFORM_MACOS // NOTE: untested
@@ -69,14 +69,14 @@ typedef enum operating_system_e
 /* architecture detection */
 #if defined(_M_X64) || defined(__amd64__)
     #define ARCH_X64
-#elif defined(__i386__) || defined(_M_IX86)
+#elif defined(__i386__) || defined(_M_IX86) || defined(__x86_64__)
     #define ARCH_X86
 #elif defined(__arm__) || defined(_M_ARM)
     #define ARCH_ARM   // NOTE: untested  
 #elif defined(__aarch64__)
     #define ARCH_ARM64 // NOTE: untested
 #else
-    WARNING("Architecture not detected.")
+    #warning "Architecture not detected"
 #endif
 
 /* define export declarations for .dll & .so files */

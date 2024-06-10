@@ -1,79 +1,71 @@
 #!/bin/bash
-# NOTE: to get all macros set by the compiler: gcc -dM -E file.c
+# NOTE:
+# - cl.exe (and clang-cl.exe) sets itself to C/C++ mode depending on the source
+#   file extension, which is why we use have test.cpp symlink
 #
-# OS+compilers combinations tested here:
+# - to get all macros set by the compiler: gcc -dM -E file.c
+#
+# - switches to create debuggable .exe & separate pdb file with cl.exe:
+#   /Zi /link /DEBUG:FULL /PDB:bin/test_msvcxx.pdb
+#
+# - OS+compilers combinations tested here:
 #   linux   + gcc(++)
 #   linux   + clang(++)
 #   linux   + mingw(++)
 #   windows + msvc(++)
 #   windows + clang-cl.exe(++)
 #   windows + clang(++)
+#   linux   + tcc
+
+INCLUDES="-I ./ -I .."
+WINCLUDES="/I ./ /I .."
 
 set -e
+rm -rf bin
 mkdir -p bin
 rm -f *.obj
 
-echo "Testing clang++, c++11:"
-rm -f bin/test_clangxx 2>/dev/null
-clang++ -g -I .. -I ./ -Wno-deprecated -std=c++11 test.c -o bin/test_clangxx && ./bin/test_clangxx
+printf "\nclang++ c++11:\n"
+clang++ -g ${INCLUDES} -Wno-deprecated -std=c++11 test.c -o bin/test_clangxx && ./bin/test_clangxx
 
-echo ""
-echo "Testing g++, c++20:"
-rm -f test_gxx 2>/dev/null
-g++ -g -I .. -I ./ test.c -std=c++20 -o bin/test_gxx && ./bin/test_gxx
+printf "\ng++ c++20:\n"
+g++ -g ${INCLUDES} test.c -std=c++20 -o bin/test_gxx && ./bin/test_gxx
 
-echo ""
-echo "Testing clang, c11:"
-rm -f test_clang 2>/dev/null
-clang -g -I .. -I ./ -std=c11 test.c -o bin/test_clang && ./bin/test_clang
+printf "\nclang c11:\n"
+clang -g ${INCLUDES} -std=c11 test.c -o bin/test_clang && ./bin/test_clang
 
-echo ""
-echo "Testing gcc, c99, 32bit:"
-rm -f test_gcc 2>/dev/null
-gcc -g -I .. -I ./ -m32 -DBUILD_DEBUG -std=c99 -O2 test.c -o bin/test_gcc && ./bin/test_gcc
+printf "\ngcc c99 (32bit):\n"
+gcc -g ${INCLUDES} -m32 -DBUILD_DEBUG -std=c99 -O2 test.c -o bin/test_gcc && ./bin/test_gcc
 
-echo ""
-echo "Testing mingw-g++:"
-rm -f test_mingwxx.exe 2>/dev/null
-x86_64-w64-mingw32-g++ -g -I .. -I ./ test.c -o bin/test_mingwxx && WINEDEBUG=-all wine ./bin/test_mingwxx.exe
+printf "\nmingw-g++:\n"
+x86_64-w64-mingw32-g++ -g ${INCLUDES} test.c -o bin/test_mingwxx && WINEDEBUG=-all wine ./bin/test_mingwxx.exe
 
-echo ""
-echo "Testing mingw-gcc:"
-rm -f test_mingw.exe 2>/dev/null
-x86_64-w64-mingw32-gcc -g -I .. -I ./ test.c -o bin/test_mingw && WINEDEBUG=-all wine ./bin/test_mingw.exe
+printf "\nmingw-gcc:\n"
+x86_64-w64-mingw32-gcc -g ${INCLUDES} test.c -o bin/test_mingw && WINEDEBUG=-all wine ./bin/test_mingw.exe
 
-echo ""
-echo "Testing MSVC, C++14:"
-rm -f test_msvcxx.exe 2>/dev/null
-# apparently cl.exe (and clang-cl.exe) sets itself to C/C++ mode depending on
-# the extension of the files, which is why we use symlinks here
-cl.exe /I .. -I ./ /std:c++14 test.cpp /link /OUT:bin/test_msvcxx.exe /SUBSYSTEM:CONSOLE && WINEDEBUG=-all wine ./bin/test_msvcxx.exe
-# switches to create debuggable .exe with separate pdb file
-#cl.exe /I .. /Zi /std:c++14 test.cpp /link /DEBUG:FULL /OUT:bin/test_msvcxx.exe /PDB:bin/test_msvcxx.pdb /SUBSYSTEM:CONSOLE
+printf "\nmsvc c++14:\n"
+cl.exe ${WINCLUDES} /std:c++14 test.cpp /link /OUT:bin/test_msvcxx.exe /SUBSYSTEM:CONSOLE && WINEDEBUG=-all wine ./bin/test_msvcxx.exe
 
-echo ""
-echo "Testing MSVC, C17:"
-rm -f test_msvc.exe 2>/dev/null
-cl.exe /I .. /I ./ /std:c17 test.c /link /OUT:bin/test_msvc.exe /SUBSYSTEM:CONSOLE && WINEDEBUG=-all wine ./bin/test_msvc.exe
+printf "\nmsvc c17:\n"
+cl.exe ${WINCLUDES} /std:c17 test.c /link /OUT:bin/test_msvc.exe /SUBSYSTEM:CONSOLE && WINEDEBUG=-all wine ./bin/test_msvc.exe
 
-echo ""
-echo "Testing clang-cl.exe, C++11:"
-rm -f test_clang-clxx.exe 2>/dev/null
-clang-cl.exe /clang:--std=c++11 /I .. /I ./ test.cpp /link /OUT:bin/test_clang-clxx.exe && WINEDEBUG=-all wine ./bin/test_clang-clxx.exe
-echo ""
-echo "Testing clang-cl.exe, C17:"
-rm -f test_clang-cl.exe 2>/dev/null
-clang-cl.exe /clang:--std=c17 /I .. /I ./ test.c /link /OUT:bin/test_clang-cl.exe && WINEDEBUG=-all wine ./bin/test_clang-cl.exe
+printf "\nclang-cl.exe c++11:\n"
+clang-cl.exe /clang:--std=c++11  ${WINCLUDES} test.cpp /link /OUT:bin/test_clang-clxx.exe && WINEDEBUG=-all wine ./bin/test_clang-clxx.exe
 
-echo ""
-echo "Testing clang on windows, C99:"
-rm -f test_clang.exe 2>/dev/null
-clang.exe --std=c99 -I .. -I ./ test.c -o bin/test_clang.exe && WINEDEBUG=-all wine ./bin/test_clang.exe
+printf "\nclang-cl.exe c17:\n"
+clang-cl.exe /clang:--std=c17  ${WINCLUDES} test.c /link /OUT:bin/test_clang-cl.exe && WINEDEBUG=-all wine ./bin/test_clang-cl.exe
 
-echo ""
-echo "Testing clang++ on windows, C++14:"
-rm -f test_clangxx.exe 2>/dev/null
-clang++.exe --std=c++14 -I .. -I ./ test.cpp -o bin/test_clangxx.exe && WINEDEBUG=-all wine ./bin/test_clangxx.exe
+printf "\nclang.exe c99:\n"
+clang.exe --std=c99 ${INCLUDES} test.c -o bin/test_clang.exe && WINEDEBUG=-all wine ./bin/test_clang.exe
+
+printf "\nclang++.exe c++14:\n"
+clang++.exe --std=c++14 ${INCLUDES} test.cpp -o bin/test_clangxx.exe && WINEDEBUG=-all wine ./bin/test_clangxx.exe
+
+printf "\ntcc c99:\n"
+tcc -g ${INCLUDES} test.c -o bin/test_tcc && ./bin/test_tcc
+
+#printf "\ntcc.exe c99:\n" # TODO doesn't compile
+#./tcc/tcc.exe -g ${INCLUDES} -I tcc/include test.c -o bin/test_tcc && ./bin/test_tcc
 
 rm -f *.obj
 rm -f *.pdb

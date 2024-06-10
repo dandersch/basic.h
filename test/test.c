@@ -54,6 +54,7 @@ int main(int argc, char** argv)
         const char* os = platform_os_string(platform_detect_os());
         LOG(INFO|PLATFORM, "OS:...........%s", os);
 
+        /* TODO add a string function */
         #if defined(COMPILER_GCC)
           #define C_COMPILER "gcc"
         #elif defined(COMPILER_CLANG)
@@ -62,6 +63,8 @@ int main(int argc, char** argv)
           #define C_COMPILER "msvc"
         #elif defined(COMPILER_MINGW)
           #define C_COMPILER "mingw"
+        #elif defined(COMPILER_TCC)
+          #define C_COMPILER "tcc"
         #endif
         LOG(INFO|PLATFORM, "COMPILER:....." C_COMPILER);
 
@@ -140,6 +143,9 @@ int main(int argc, char** argv)
                 int a = 0;
         }
 
+        #ifdef COMPILER_TCC
+        #pragma pack(1) // NOTE: tcc doesnt support do_pragma's
+        #endif
         PUSH_STRUCT_PACK(1)
         typedef struct test_align_packed
         {
@@ -149,6 +155,9 @@ int main(int argc, char** argv)
                      // = 9B because of packing
         } test_align_packed;
         POP_STRUCT_PACK()
+        #ifdef COMPILER_TCC
+        #pragma pack(8) // NOTE: tcc doesnt support do_pragma's
+        #endif
         typedef struct test_align_unpacked
         {
             int   a; //    4B
@@ -230,7 +239,9 @@ int main(int argc, char** argv)
 
     /* TEST THREAD STUFF */
     {
+        #if !defined(COMPILER_TCC) // TODO
         static thread_var u32 thread_thing = 0; // TODO test properly with threads
+        #endif
     }
 
     /* TEST MEMORY MACROS */

@@ -25,7 +25,7 @@
 
     #define PUSH_STRUCT_PACK(n) DO_PRAGMA(pack(push,n))
     #define POP_STRUCT_PACK()   DO_PRAGMA(pack(pop))
-#else
+#elif !defined(__TINYC__) // NOTE: so we can be included before basic_platform.h
     #define DO_PRAGMA(x) _Pragma (#x)
     #define WARNING_TO_ENABLE(flag,code) DO_PRAGMA(GCC diagnostic warning flag)
     #define WARNING_TO_ERROR(flag,code)  DO_PRAGMA(GCC diagnostic error   flag)
@@ -39,4 +39,18 @@
 
     #define PUSH_STRUCT_PACK(n) DO_PRAGMA(pack(push,n))
     #define POP_STRUCT_PACK()   DO_PRAGMA(pack(pop))
+#else
+    #define DO_PRAGMA(x)
+    #define WARNING_TO_ENABLE(flag,code)
+    #define WARNING_TO_ERROR(flag,code)
+    #define WARNING_TO_IGNORE(flag,code)
+
+    #define PUSH_WARNINGS()
+    #define POP_WARNINGS()
+
+    // NOTE: to not show "expanded from macro.." in gcc: -ftrack-macro-expansion=0 -fno-diagnostics-show-caret
+    #define WARNING(msg)
+
+    #define PUSH_STRUCT_PACK(n)
+    #define POP_STRUCT_PACK()
 #endif
