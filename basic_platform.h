@@ -4,27 +4,17 @@
  * includes detection of the OS, compiler, architecture, language std and
  * creates appropriate #defines for those platforms + some runtime detection
  * functions. Here are the most important #defines:
- * - PLATFORM_WIN32|LINUX|MACOS
- * - COMPILER_GCC|CLANG|MINGW|MSVC
- * - LANGUAGE_C|CPP
- * - STANDARD_C89|C99|C11|Cxx11|Cxx14|Cxx17|Cxx20|..
- * - STANDARD_VERSION (can go from 1989 to 2020)
- * - EXPORT (for cross-platform export declaration, syntax: EXPORT void func() )
- * - CDECL  (specify c calling convention cross-platform, syntax: void CDECL func() )
+ * - PLATFORM_{WIN32|LINUX|MACOS}
+ * - COMPILER_{GCC|CLANG|MINGW|MSVC|TCC}
+ * - LANGUAGE_{C|CPP}
+ * - STANDARD_{C89|C99|C11|C17|Cxx98|Cxx03|Cxx11|Cxx14|Cxx17|Cxx20}
+ * - STANDARD_VERSION: Integer between 1989 and 2020
+ * - EXPORT: for export declaration, syntax: EXPORT void func()
+ * - CDECL:  c calling convention, syntax: void CDECL func()
  * - ...
  */
 
 /* os detection */
-typedef enum operating_system_e
-{
-    OPERATING_SYSTEM_UNKNOWN,
-    OPERATING_SYSTEM_LINUX,
-    OPERATING_SYSTEM_WIN32,
-    OPERATING_SYSTEM_MACOS,
-    OPERATING_SYSTEM_COUNT,
-} operating_system_e;
-
-// NOTE: maybe rename these to OP_SYS_WIN32 or similar...
 #if defined(_WIN32)
     #define PLATFORM_WIN32
 #elif defined(__gnu_linux__) || defined(__linux__)
@@ -35,7 +25,6 @@ typedef enum operating_system_e
     #error "No supported platform (OS) detected."
 # endif
 
-// extra "platforms" we might be interested in
 #if defined(__EMSCRIPTEN__)
     #define PLATFORM_WEB // NOTE: untested
 #endif
@@ -52,16 +41,12 @@ typedef enum operating_system_e
         #undef COMPILER_GCC
     #endif
 
-#elif defined(__clang__ ) // NOTE for clang++ on windows
+#elif defined(__clang__) // NOTE for clang++ on windows
     #define COMPILER_CLANG
-
-/* TODO untested */
 #elif defined(__TINYC__)
     #define COMPILER_TCC
-
 #elif defined(_MSC_VER)
     #define COMPILER_MSVC
-
 #else
     #error "No supported compiler detected."
 #endif
@@ -80,10 +65,8 @@ typedef enum operating_system_e
 #endif
 
 /* define export declarations for .dll & .so files */
-// NOTE: untested
 #if defined(COMPILER_GCC)
-    // NOTE GCC exports every symbol to the ELF by default (so no keyword would be needed), 
-    // unless -fvisibility=hidden is specified, then below keyword is needed for exporting
+    // NOTE GCC exports every symbol to the ELF by default, unless -fvisibility=hidden is specified
     #if __GNUC__ >= 4 // NOTE: taken from SDL
         #define EXPORT __attribute__((visibility("default")))
     #else
@@ -162,7 +145,36 @@ typedef enum operating_system_e
     WARNING("Language not detected (C or C++)")
 #endif
 
-/* functions for runtime detection */
+/* functions / strings for runtime detection */
+
+#define PLATFORMS(X)        \
+    X(UNKNOWN, "Unknown")   \
+    X(LINUX,   "Linux")     \
+    X(WIN32,   "Windows")   \
+    X(MACOS,   "MacOS")     \
+    X(COUNT,   "Invalid")
+
+#define OPERATING_SYSTEM_ENUM(e, ...) OPERATING_SYSTEM_##e,
+typedef enum operating_system_e
+{
+    PLATFORMS(OPERATING_SYSTEM_ENUM)
+} operating_system_e;
+
+#define COMPILERS(X)      \
+    X(UNKNOWN, "Unknown") \
+    X(CLANG,   "Clang")   \
+    X(GCC,     "GCC")     \
+    X(MINGW,   "MinGW")   \
+    X(MSVC,    "MSVC")    \
+    X(TCC,     "TCC")     \
+    X(COUNT,   "Invalid")
+
+#define COMPILER_ENUM(e, ...) COMPILER_TYPE_##e, // NOTE: _TYPE_ to not clash with the (more important) macro
+typedef enum compiler_e
+{
+    COMPILERS(COMPILER_ENUM)
+} compiler_e;
+
 inline static operating_system_e platform_detect_os()
 {
     operating_system_e os = OPERATING_SYSTEM_UNKNOWN;
@@ -175,16 +187,84 @@ inline static operating_system_e platform_detect_os()
 #endif
     return os;
 }
+
+#define OPERATING_SYSTEM_STRING(e, str, ...) case OPERATING_SYSTEM_##e: { string = str; } break;
 inline static const char* platform_os_string(operating_system_e os)
 {
     const char* string = "Unknown";
     switch (os)
     {
-      case OPERATING_SYSTEM_LINUX: { string = "Linux";   } break;
-      case OPERATING_SYSTEM_WIN32: { string = "Windows"; } break;
-      case OPERATING_SYSTEM_MACOS: { string = "MacOS";   } break;
-      default: { } break; // UNREACHABLE
+        PLATFORMS(OPERATING_SYSTEM_STRING);
+        default: { string = "Invalid"; } break; // UNREACHABLE
     }
     return string;
 }
 
+inline static compiler_e platform_detect_compiler()
+{
+    compiler_e compiler = COMPILER_TYPE_UNKNOWN;
+#if   defined(COMPILER_CLANG)
+    compiler = COMPILER_TYPE_CLANG;
+#elif defined(COMPILER_GCC)
+    compiler = COMPILER_TYPE_GCC;
+#elif defined(COMPILER_MINGW)
+    compiler = COMPILER_TYPE_MINGW;
+#elif defined(COMPILER_MSVC)
+    compiler = COMPILER_TYPE_MSVC;
+#elif defined(COMPILER_TCC)
+    compiler = COMPILER_TYPE_TCC;
+#endif
+    return compiler;
+}
+
+#define COMPILER_STRING(e, str, ...) case COMPILER_TYPE_##e: { string = str; } break;
+inline static const char* platform_compiler_string(compiler_e compiler)
+{
+    const char* string = "Unknown";
+    switch (compiler)
+    {
+        COMPILERS(COMPILER_STRING);
+        default: { string = "Invalid"; } break; // UNREACHABLE
+    }
+    return string;
+}
+
+#if defined(ARCH_X64)
+  #define ARCHITECTURE_STRING "x64"
+#elif defined(ARCH_X86)
+  #define ARCHITECTURE_STRING "x86"
+#elif defined(ARCH_ARM)
+  #define ARCHITECTURE_STRING "ARM"
+#endif
+
+#if   defined(STANDARD_C89)
+  #define C_STANDARD_STRING "C89"
+#elif defined(STANDARD_C99)
+  #define C_STANDARD_STRING "C99"
+#elif defined(STANDARD_C11)
+  #define C_STANDARD_STRING "C11"
+#elif defined(STANDARD_C17)
+  #define C_STANDARD_STRING "C17"
+#elif defined(STANDARD_Cxx98)
+  #define C_STANDARD_STRING "C++98"
+#elif defined(STANDARD_Cxx03)
+  #define C_STANDARD_STRING "C++03"
+#elif defined(STANDARD_Cxx11)
+  #define C_STANDARD_STRING "C++11"
+#elif defined(STANDARD_Cxx14)
+  #define C_STANDARD_STRING "C++14"
+#elif defined(STANDARD_Cxx17)
+  #define C_STANDARD_STRING "C++17"
+#elif defined(STANDARD_Cxx20)
+  #define C_STANDARD_STRING "C++20"
+#endif
+
+#if defined(BUILD_DEBUG)
+  #define BUILD_TYPE_STRING "DEBUG"
+#elif defined(BUILD_RELEASE)
+  #define BUILD_TYPE_STRING "RELEASE"
+#elif defined(BUILD_CUSTOM)
+  #define BUILD_TYPE_STRING "CUSTOM"
+#else
+  #error "No build type set or detected."
+#endif

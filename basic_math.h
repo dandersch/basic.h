@@ -17,12 +17,16 @@
 
 /* mathematical constants */
 // TODO find out the double precision versions (PI_F64,...)
+#define PI_F64      3.14159265358979323846264338327950288
 #define PI_F32      3.14159265359f
 #define PI          PI_F32
+#define TAU_F64     TODO
 #define TAU_F32     6.28318530718f 
 #define TAU         TAU_F32
+#define EULER_F64   TODO
 #define EULER_F32   2.71828182846f
 #define EULER       EULER_F32
+#define EPSILON_F64 TODO
 #define EPSILON_F32 1.1920929e-7f
 #define EPSILON     EPSILON_F32
 
@@ -199,18 +203,7 @@ inline static m3f m3f_inv(m3f mat)
     inline m3f m3f::inverse()              { return m3f_inv(*this); }
 #endif
 
-#include <stdio.h> // TODO can be a macro
-inline static void m3f_print(m3f mat)
-{
-    for (u32 i = 0; i < 3; i++)
-    {
-        for (u32 j = 0; j < 3; j++)
-        {
-            printf("%f ", mat.e[i][j]);
-        }
-        printf("\n");
-    }
-}
+#define m3f_print(mat) do { for (u32 i = 0; i < 3; i++) { for (u32 j = 0; j < 3; j++) { if(mat.e[i][j] >= 0) { printf(" "); } printf("%.3f ", mat.e[i][j]);} printf("\n");}} while(0)
 
 /* useful typedefs */
 // typedef v3f   rgb_f32;

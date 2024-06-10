@@ -47,73 +47,11 @@ int main(int argc, char** argv)
 {
     /* TEST PLATFORM DETECTION */
     {
-        const char* os = platform_os_string(platform_detect_os());
-        LOG(INFO|PLATFORM, "OS:...........%s", os);
-
-        /* TODO add a string function */
-        #if defined(COMPILER_GCC)
-          #define C_COMPILER "gcc"
-        #elif defined(COMPILER_CLANG)
-          #define C_COMPILER "clang"
-        #elif defined(COMPILER_MSVC)
-          #define C_COMPILER "msvc"
-        #elif defined(COMPILER_MINGW)
-          #define C_COMPILER "mingw"
-        #elif defined(COMPILER_TCC)
-          #define C_COMPILER "tcc"
-        #endif
-        LOG(INFO|PLATFORM, "COMPILER:....." C_COMPILER);
-
-        #if defined(ARCH_X64)
-          #define ARCHITECTURE "x64"
-        #elif defined(ARCH_X86)
-          #define ARCHITECTURE "x86"
-        #elif defined(ARCH_ARM)
-          #define ARCHITECTURE "ARM"
-        #endif
-        LOG(INFO|PLATFORM, "ARCH:........." ARCHITECTURE);
-
-        #if defined(LANGUAGE_CPP)
-          #define C_OR_CPP "C++"
-        #elif defined(LANGUAGE_C)
-          #define C_OR_CPP "C"
-        #endif
-        LOG(INFO|PLATFORM, "LANGUAGE:....." C_OR_CPP);
-
-        #if   defined(STANDARD_C89)
-          #define C_STANDARD "C89"
-        #elif defined(STANDARD_C99)
-          #define C_STANDARD "C99"
-        #elif defined(STANDARD_C11)
-          #define C_STANDARD "C11"
-        #elif defined(STANDARD_C17)
-          #define C_STANDARD "C17"
-        #elif defined(STANDARD_Cxx98)
-          #define C_STANDARD "C++98"
-        #elif defined(STANDARD_Cxx03)
-          #define C_STANDARD "C++03"
-        #elif defined(STANDARD_Cxx11)
-          #define C_STANDARD "C++11"
-        #elif defined(STANDARD_Cxx14)
-          #define C_STANDARD "C++14"
-        #elif defined(STANDARD_Cxx17)
-          #define C_STANDARD "C++17"
-        #elif defined(STANDARD_Cxx20)
-          #define C_STANDARD "C++20"
-        #endif
-        LOG(INFO|PLATFORM, "STANDARD:....." C_STANDARD);
-
-        /* TEST BUILD TYPE */
-        #if defined(BUILD_DEBUG)
-          #define BUILD_TYPE "DEBUG"
-        #elif defined(BUILD_RELEASE)
-          #define BUILD_TYPE "RELEASE"
-        #elif defined(BUILD_CUSTOM)
-          #define BUILD_TYPE "CUSTOM"
-        #else
-          #error "No build type set or detected."
-        #endif
-        LOG(INFO|PLATFORM, "BUILD_TYPE:..." BUILD_TYPE);
+        LOG(INFO|PLATFORM, "OS:...........%s", platform_os_string(platform_detect_os()));
+        LOG(INFO|PLATFORM, "COMPILER:.....%s", platform_compiler_string(platform_detect_compiler()));
+        LOG(INFO|PLATFORM, "ARCH:.........%s", ARCHITECTURE_STRING);
+        LOG(INFO|PLATFORM, "STANDARD:.....%s", C_STANDARD_STRING);
+        LOG(INFO|PLATFORM, "BUILD_TYPE:...%s", BUILD_TYPE_STRING);
     }
 
     /* TEST DEBUG FUNCTIONS */
@@ -461,6 +399,8 @@ void test_math() {
          2.2f, 1.0f, -2.8f,
          3.8f, 7.2f, -5.0f,
     };
+
+    if (0) { m3f_print(mat); }
 
     #if defined(LANGUAGE_CPP)
     v3f vec3 = vec1 + vec2;
