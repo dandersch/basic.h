@@ -22,19 +22,21 @@
    https://nullprogram.com/blog/2023/02/15/
  */
 
-#include "log/log.h"
+#include "basic_platform.h"  // Maybe merge
+#include "basic_pragma.h"    // these two
 
-#include "basic_pragma.h"
-#include "basic_types.h"
-#include "basic_buildtype.h"
-#include "basic_platform.h"
-#include "basic_warnings.h"
-#include "basic_debug.h"
-#include "basic_math.h"
-#include "basic_thread.h"
+#include "basic_debug.h"     // perhaps merge into basic_platform.h
+
+#include "basic_buildtype.h" // depends on basic_platform.h  TODO maybe rename to basic_build.h
+
+#include "basic_types.h"     // maybe merge
+#include "basic_math.h"      // these two
+
 #include "basic_memory.h"
-#include "basic_macro.h"
 #include "basic_arena.h"
-#include "basic_linkedlist.h"
 #include "basic_dynarr.h"
-//#include "basic_string.h"
+
+/* standalones: these do not depend on other headers */
+#include "basic_macro.h"
+#include "ext/utlist.h"      /* linked list macros (thirdparty) */
+#include "log/log.h"

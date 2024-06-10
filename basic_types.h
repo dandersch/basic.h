@@ -1,7 +1,7 @@
 #pragma once
 
 /* u32, f32, ... types */
-#include <stdint.h>   // TODO find a way to avoid this include
+#include <stdint.h>
 typedef int8_t    i8;
 typedef int16_t   i16;
 typedef int32_t   i32;

@@ -11,6 +11,8 @@
  * - STANDARD_VERSION: Integer between 1989 and 2020
  * - EXPORT: for export declaration, syntax: EXPORT void func()
  * - CDECL:  c calling convention, syntax: void CDECL func()
+ * - thread_local: crossplatform thread_local specifier
+ * - BUILD_{DEBUG|RELEASE|CUSTOM}
  * - ...
  */
 
@@ -123,7 +125,7 @@
     #elif STANDARD_VERSION >= 2020 && STANDARD_VERSION < 2021
         #define STANDARD_Cxx20
     #else
-        WARNING("C++ standard not detected")
+        #warning "C++ standard not detected"
     #endif
 #elif defined(__STDC_VERSION__)
     #define LANGUAGE_C
@@ -138,15 +140,27 @@
         #define STANDARD_C11
     #elif __STDC_VERSION__ >= 201701L && __STDC_VERSION__ < 201800L
         #define STANDARD_C17
+    //#elif __STDC_VERSION__ >= 2013... && __STDC_VERSION__ < 201800L // TODO
+    //    #define STANDARD_C23
     #else
-        WARNING("C standard not detected")
+        #warning "C standard not detected"
     #endif
 #else
-    WARNING("Language not detected (C or C++)")
+    #warning "Language not detected (C or C++)"
+#endif
+
+/* thread local storage macro */
+#if defined(COMPILER_MSVC)
+    #define thread_local __declspec(thread)
+#else
+    #define thread_local __thread
+#endif
+
+#if defined(STANDARD_Cxx11) || defined(STANDARD_C23)
+    #undef thread_local /* keyword in C++11 and C23 */
 #endif
 
 /* functions / strings for runtime detection */
-
 #define PLATFORMS(X)        \
     X(UNKNOWN, "Unknown")   \
     X(LINUX,   "Linux")     \
@@ -257,6 +271,19 @@ inline static const char* platform_compiler_string(compiler_e compiler)
   #define C_STANDARD_STRING "C++17"
 #elif defined(STANDARD_Cxx20)
   #define C_STANDARD_STRING "C++20"
+#endif
+
+/* determine build type */
+#if !defined(BUILD_DEBUG) && !defined(BUILD_RELEASE) && !defined(BUILD_CUSTOM)
+    // if not set by -DBUILD_*, we try to figure out whether to build DEBUG/RELEASE
+    // via conventional macros set by IDEs/compilers/etc.
+    #if defined(NDEBUG) || defined(__OPTIMIZE__)
+        #define BUILD_RELEASE
+    #elif defined(DEBUG) || defined(_DEBUG)
+        #define BUILD_DEBUG
+    #else
+        #define BUILD_DEBUG // default to debug if all else fails
+    #endif
 #endif
 
 #if defined(BUILD_DEBUG)

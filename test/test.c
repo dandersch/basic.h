@@ -42,6 +42,7 @@ const u64 MEMORY_OVERALL = MEMORY_GAME MEMORY_RENDERER + 0;
 
 int log_verbosity_level = LOG_EVERYTHING;
 
+
 void test_math();
 int main(int argc, char** argv)
 {
@@ -106,15 +107,16 @@ int main(int argc, char** argv)
         ASSERT(12 == sizeof(test_align_unpacked));
     }
 
-    /* TEST MATH FUNCTIONS  */
-    test_math();
-
     /* TEST THREAD STUFF */
     {
         #if !defined(COMPILER_TCC) // TODO
-        static thread_var u32 thread_thing = 0; // TODO test properly with threads
+        static thread_local u32 thread_thing = 0; // TODO test properly with threads
         #endif
     }
+
+    /* TEST MATH FUNCTIONS  */
+    test_math();
+
 
     /* TEST MEMORY MACROS */
     {

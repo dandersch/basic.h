@@ -1,3 +1,5 @@
+/* cross-platform #pragma's */
+
 // MSVC syntax: #pragma warning( disable : 4507 34; once : 4385; error : 164 )
 // MSVC keywords:
 //   default
@@ -11,8 +13,7 @@
 //   error
 //   ignored
 
-/* cross-platform #pragma's */
-#if defined(_MSC_VER) && !defined(__clang__) // NOTE: so we can be included before basic_platform.h
+#if defined(COMPILER_MSVC) && !defined(COMPILER_CLANG)
     #define DO_PRAGMA(x) __pragma(x)
 
     #define WARNING_TO_ENABLE(flag,code) DO_PRAGMA(warning(default : code))
@@ -25,7 +26,7 @@
 
     #define PUSH_STRUCT_PACK(n) DO_PRAGMA(pack(push,n))
     #define POP_STRUCT_PACK()   DO_PRAGMA(pack(pop))
-#elif !defined(__TINYC__) // NOTE: so we can be included before basic_platform.h
+#elif !defined(COMPILER_TCC)
     #define DO_PRAGMA(x) _Pragma (#x)
     #define WARNING_TO_ENABLE(flag,code) DO_PRAGMA(GCC diagnostic warning flag)
     #define WARNING_TO_ERROR(flag,code)  DO_PRAGMA(GCC diagnostic error   flag)
@@ -48,7 +49,6 @@
     #define PUSH_WARNINGS()
     #define POP_WARNINGS()
 
-    // NOTE: to not show "expanded from macro.." in gcc: -ftrack-macro-expansion=0 -fno-diagnostics-show-caret
     #define WARNING(msg)
 
     #define PUSH_STRUCT_PACK(n)
