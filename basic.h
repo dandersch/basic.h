@@ -38,7 +38,7 @@
 #endif
 #include "memory/mem_arena.h"
 
-#include "basic_dynarr.h"    /* depends on basic_memory.h */
+#include "dynarr.h"    /* depends on basic_memory.h */
 
 /* standalones: these do not depend on other headers or on each other */
 #include "macros.h"
