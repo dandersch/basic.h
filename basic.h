@@ -29,8 +29,8 @@
 
 #ifdef BASIC_IMPLEMENTATION
   #define MEM_ARENA_IMPLEMENTATION
-  //#define MEM_ARENA_OS_ALLOC(size) mem_alloc(size)
-  //#define MEM_ARENA_OS_FREE(ptr) mem_free(size)
+  //#define MEM_ARENA_OS_ALLOC(size)        mem_alloc(size)
+  //#define MEM_ARENA_OS_FREE(ptr)          mem_free(size)
   #define MEM_ARENA_OS_RESERVE(size)      mem_reserve(NULL, size)
   #define MEM_ARENA_OS_COMMIT(ptr,size)   mem_commit(ptr, size)
   #define MEM_ARENA_OS_RELEASE(ptr,size)  mem_release(ptr, size)
@@ -38,7 +38,7 @@
 #endif
 #include "memory/mem_arena.h"
 
-#include "dynarr.h"    /* depends on basic_memory.h */
+#include "dynarr.h"    /* depends on memory.h */
 
 /* standalones: these do not depend on other headers or on each other */
 #include "macros.h"

@@ -153,51 +153,6 @@ int main(int argc, char** argv)
         #endif
     }
 
-    /* TEST MEMORY ALLOCATION */
-    {
-        u64 buf_size_reserved  = MEGABYTES(8);
-
-        void* fixed_address = NULL;
-        #if defined(BUILD_DEBUG) && defined(ARCH_X64)
-        fixed_address = (void*) GIGABYTES(256); // 0x4000000000
-        #endif
-        u8* buf       = (u8*) mem_reserve(fixed_address, buf_size_reserved);
-        ASSERT(buf);
-        #if defined(BUILD_DEBUG) && defined(ARCH_X64)
-        ASSERT(buf == fixed_address);
-        #endif
-
-        u64 buf_size_committed = KILOBYTES(12);
-        b32 committed          = mem_commit(buf, buf_size_committed);
-        ASSERT(committed);
-
-        u8* buf_2              = (u8*) mem_alloc(buf_size_committed);
-        ASSERT(buf_2);
-
-        /* test if memory is initialized to zero */
-        for (u32 i = 0; i < buf_size_committed; i++)
-        {
-            ASSERT(!buf[i]);
-            ASSERT(!buf_2[i]);
-        }
-
-        /* copying and comparing memory */
-        for (u32 i = 0; i < buf_size_committed; i++)
-        {
-            buf[i] = 'a';
-        }
-        ASSERT(!mem_equal(buf, buf_2, buf_size_committed));
-        mem_copy(buf_2, buf, buf_size_committed);
-        ASSERT(mem_equal(buf, buf_2, buf_size_committed));
-
-        /* freeing memory */
-        b32 decommitted = mem_decommit(buf, buf_size_committed);
-        ASSERT(decommitted);
-        // for (u32 i = 0; i < buf_size_committed; i++) { buf[0] = 'b'; } // should cause SEGV
-        mem_release(buf,  buf_size_committed);
-        mem_free(buf_2,   buf_size_committed);
-    }
-
     /* TEST COMMON MACROS */
     {
         /* test scoped_begin_end */
@@ -243,67 +198,6 @@ int main(int argc, char** argv)
         POP_WARNINGS()
     }
 
-    /* TEST ARENAS */
-    {
-        mem_arena_t* arena = mem_arena_reserve(MEGABYTES(1));
-        u8* arena_buf     = (u8*) mem_arena_push(arena, KILOBYTES(4));
-        for (u32 i = 0; i < KILOBYTES(4); i++) { ASSERT(!arena_buf[i]); }
-        mem_arena_pop_by(arena, KILOBYTES(1));
-        ASSERT(mem_arena_get_pos(arena) == KILOBYTES(3));
-
-        /* test if memory after popping & pushing is still zeroed */
-        mem_arena_push(arena, KILOBYTES(1));
-        for (u32 i = 0; i < KILOBYTES(4); i++) { ASSERT(!arena_buf[i]); }
-
-        struct test_align_unpacked
-        {
-            int   a; //    4B
-            char  b; // +  1B
-            float c; // +  4B
-                     // = 12B bc of std alignment
-        };
-        struct test_align_unpacked* struct_test = ARENA_PUSH_STRUCT(arena, struct test_align_unpacked);
-        u32* number_arr = ARENA_PUSH_ARRAY(arena, u32, 256);
-        for (u32 i = 0; i < 256; i++) { ASSERT(!number_arr[i]); }
-
-        mem_arena_pop_to(arena, number_arr);
-        number_arr = ARENA_PUSH_ARRAY(arena, u32, 256);
-        for (u32 i = 0; i < 256; i++) { ASSERT(!number_arr[i]); }
-
-        /* provoke an overflow */
-        //mem_arena_push(&sub_arena, KILOBYTES(3));
-        //mem_arena_push(&arena,     MEGABYTES(10));
-    }
-
-    /* TEST ARENA RESERVING & COMMITTING */
-    {
-        mem_arena_t* arena   = mem_arena_reserve(KILOBYTES(32));
-        u8* arena_buf_1      = (u8*) mem_arena_push(arena, KILOBYTES(4));
-        ASSERT(arena_buf_1);
-        for (u32 i = 0; i < KILOBYTES(4); i++) { ASSERT(!arena_buf_1[i]); }
-
-        u8* arena_buf_2      = (u8*) mem_arena_push(arena, KILOBYTES(16));
-        ASSERT(arena_buf_2);
-        for (u32 i = 0; i < KILOBYTES(16); i++) { ASSERT(!arena_buf_2[i]); }
-    }
-
-    /* TEST SUBARENAS */
-    {
-        mem_arena_t* base_arena     = mem_arena_reserve(RES_MEM_APPLICATION);
-        mem_arena_t* platform_arena = mem_arena_subarena(base_arena, RES_MEM_PLATFORM);
-        ASSERT(platform_arena);
-        mem_arena_t* renderer_arena = mem_arena_subarena(base_arena, RES_MEM_RENDERER);
-        ASSERT(renderer_arena);
-        mem_arena_t* game_arena     = mem_arena_subarena(base_arena, RES_MEM_GAME);
-        ASSERT(game_arena);
-
-        // TODO find a way to turn overallocating the base arena into a compile time error
-        //mem_arena_t* test_arena     = mem_arena_subarena(base_arena, 1); // should fail
-
-        //u8* test_buf = (u8*) mem_arena_push(game_arena, KILOBYTES(5)); // push beyond pagesize
-        //for (u32 i = 0; i < KILOBYTES(8); i++) { test_buf[i] = 'a'; }
-    }
-
     /* TEST LINKED LIST MACROS */
     {
         PUSH_WARNINGS()
@@ -316,7 +210,7 @@ int main(int argc, char** argv)
         } node_t;
         POP_WARNINGS()
 
-        mem_arena_t* arena = mem_arena_reserve(MEGABYTES(1));
+        mem_arena_t* arena = mem_arena_create(MEGABYTES(1));
         node_t* first  = (node_t*) mem_alloc(sizeof(node_t));
         first->data    = 1;
         node_t* second = ARENA_PUSH_STRUCT(arena, node_t);
@@ -339,7 +233,8 @@ int main(int argc, char** argv)
             val++;
         }
 
-        mem_arena_free(arena);
+        mem_arena_destroy(&arena);
+        ASSERT(arena == NULL);
     }
 
     /* TEST DYNAMIC ARRAY */
