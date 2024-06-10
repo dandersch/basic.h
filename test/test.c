@@ -1,5 +1,5 @@
 #define LOG_USE_SHORT_NAMES_GLOBALLY
-#define LOG_USE_PLAIN_ENTRY_FILE
+#define LOG_USE_DEF_FILE
 #define LOG_ENTRY_FILE "log_entries.h"
 #ifdef __MINGW32__
       #define LOG_USE_NO_COLOR

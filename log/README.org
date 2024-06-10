@@ -9,21 +9,18 @@ severities, subsystems and categories through the use of X-Macros.
 After copying ~log.h~ into your project:
 
 #+BEGIN_SRC C :includes "./log.h"
-#define LOG_ENTRIES_SEVERITY \
-LOG_ENTRY_SEVERITY(   INFO,         (1<< 0),    "[INFO ]",     LOG_COLOR_GREEN   )\
-LOG_ENTRY_SEVERITY(   WARN,         (1<< 1),    "[WARN ]",     LOG_COLOR_YELLOW  )\
-LOG_ENTRY_SEVERITY(   ERROR,        (1<< 2),    "[ERROR]",     LOG_COLOR_RED     )\
-LOG_ENTRY_SEVERITY(   EMPTY0,             0,    "[     ]",     LOG_COLOR_GRAY    )
-#define LOG_ENTRIES_SUBSYSTEM \
-LOG_ENTRY_SUBSYSTEM(  PLATFORM,     (1<< 8),    "[PLATF]",     LOG_COLOR_CYAN    )\
-LOG_ENTRY_SUBSYSTEM(  AUDIO,        (1<< 9),    "[AUDIO]",     LOG_COLOR_GREEN   )\
-LOG_ENTRY_SUBSYSTEM(  VIDEO,        (1<<10),    "[VIDEO]",     LOG_COLOR_RED     )\
-LOG_ENTRY_SUBSYSTEM(  EMPTY1,             0,    "[     ]",     LOG_COLOR_GRAY    )
-#define LOG_ENTRIES_CATEGORY \
-LOG_ENTRY_CATEGORY(   INIT,         (1<<18),    "[INIT ]",     LOG_COLOR_GRAY    )\
-LOG_ENTRY_CATEGORY(   SHUTDOWN,     (1<<19),    "[SHUTD]",     LOG_COLOR_GRAY    )\
-LOG_ENTRY_CATEGORY(   EMPTY2,             0,    "[     ]",     LOG_COLOR_GRAY    )
-/* entry              name            value      string        color             */
+#define LOG_ENTRIES \
+LOG_ENTRY(SEVERITY,   INFO,         (1<< 1),    "[INFO ]",     LOG_COLOR_GREEN   )\
+LOG_ENTRY(SEVERITY,   WARN,         (1<< 2),    "[WARN ]",     LOG_COLOR_YELLOW  )\
+LOG_ENTRY(SEVERITY,   ERROR,        (1<< 3),    "[ERROR]",     LOG_COLOR_RED     )\
+LOG_ENTRY(SEVERITY,   FATAL,        (1<< 4),    "[FATAL]",     LOG_COLOR_PURPLE  )\
+LOG_ENTRY(SUBSYSTEM,  PLATFORM,     (1<<10),    "[PLATF]",     LOG_COLOR_CYAN    )\
+LOG_ENTRY(SUBSYSTEM,  AUDIO,        (1<<11),    "[AUDIO]",     LOG_COLOR_GREEN   )\
+LOG_ENTRY(SUBSYSTEM,  VIDEO,        (1<<12),    "[VIDEO]",     LOG_COLOR_RED     )\
+LOG_ENTRY(CATEGORY,   INIT,         (1<<20),    "[INIT ]",     LOG_COLOR_GRAY    )\
+LOG_ENTRY(CATEGORY,   SHUTDOWN,     (1<<21),    "[SHUTD]",     LOG_COLOR_GRAY    )\
+LOG_ENTRY(CATEGORY,   EMPTY0,             0,    "[     ]",     LOG_COLOR_GRAY    )
+/*         entry      name            value      string        color             */
 
 #include "log.h"
 
@@ -62,7 +59,7 @@ means:
 LOG_ENTRY(name, value,  string, color)
 #+END_SRC
 
-- ~LOG_ENTRY~: The X-Macro. Either ~LOG_ENTRY_SEVERITY~, ~LOG_ENTRY_SUBSYSTEM~, ~LOG_ENTRY_CATEGORY~
+- ~entry~: Either ~SEVERITY~, ~SUBSYSTEM~ or ~CATEGORY~
 - ~name~: Symbol name of your choice. Will be prefixed in the header file, but can
   be used unprefixed inside the ~LOG(...)~ macro
 - ~value~: Bit that identifies the entry in the bitfield. Must be unique for every
@@ -78,32 +75,31 @@ You can also move all macro definitions to a separate file. Define
 #include "log.h"
 #+END_SRC
 
-* Using a plain entry file
+* Using a ~.def~ file
 By default, the ~LOG_ENTRY_FILE~ needs to contain definitions of certain macros
 and manually assigned bit values. You can have a more simple file structure by
-defining ~LOG_USE_PLAIN_ENTRY_FILE~ and defining ~LOG_ENTRY_FILE~ to that file
-before including ~log.h~. The plain entry should look like this:
+defining ~LOG_USE_DEF_FILE~ and defining ~LOG_ENTRY_FILE~ to that file
+before including ~log.h~. The ~.def~ should look like this:
 
 #+BEGIN_SRC C :includes
-/* entry              name          value             string         color            */
-LOG_ENTRY_SEVERITY(   TRACE,        (1<<__LINE__),    "[TRACE]",     LOG_COLOR_GRAY    )
-LOG_ENTRY_SEVERITY(   INFO,         (1<<__LINE__),    "[INFO ]",     LOG_COLOR_GREEN   )
-LOG_ENTRY_SEVERITY(   WARN,         (1<<__LINE__),    "[WARN ]",     LOG_COLOR_YELLOW  )
-LOG_ENTRY_SEVERITY(   ERROR,        (1<<__LINE__),    "[ERROR]",     LOG_COLOR_RED     )
-LOG_ENTRY_SEVERITY(   FATAL,        (1<<__LINE__),    "[FATAL]",     LOG_COLOR_PURPLE  )
-LOG_ENTRY_SUBSYSTEM(  PLATFORM,     (1<<__LINE__),    "[PLATF]",     LOG_COLOR_GREEN   )
-LOG_ENTRY_SUBSYSTEM(  AUDIO,        (1<<__LINE__),    "[AUDIO]",     LOG_COLOR_GREEN   )
-LOG_ENTRY_SUBSYSTEM(  VIDEO,        (1<<__LINE__),    "[VIDEO]",     LOG_COLOR_GREEN   )
-LOG_ENTRY_SUBSYSTEM(  NETWORK,      (1<<__LINE__),    "[NETWK]",     LOG_COLOR_GREEN   )
-LOG_ENTRY_SUBSYSTEM(  TEST,         (1<<__LINE__),    "[TEST ]",     LOG_COLOR_GREEN   )
-LOG_ENTRY_CATEGORY(   INIT,         (1<<__LINE__),    "[INIT ]",     LOG_COLOR_PURPLE  )
-LOG_ENTRY_CATEGORY(   SHUTDOWN,     (1<<__LINE__),    "[SHUTD]",     LOG_COLOR_OFF     )
-LOG_ENTRY_CATEGORY(   ACTIVATE,     (1<<__LINE__),    "[ACTIV]",     LOG_COLOR_PURPLE  )
-LOG_ENTRY_CATEGORY(   DEACTIVATE,   (1<<__LINE__),    "[DEACT]",     LOG_COLOR_PURPLE  )
-/* special entries: what to display when no severity/subsystem/category is passed     */
-LOG_ENTRY_SEVERITY(   EMPTY0,                   0,    "[     ]",     LOG_COLOR_GRAY    )
-LOG_ENTRY_SUBSYSTEM(  EMPTY1,                   0,    "[     ]",     LOG_COLOR_GRAY    )
-LOG_ENTRY_CATEGORY(   EMPTY2,                   0,    "[     ]",     LOG_COLOR_GRAY    )
+/*         entry      name          value             string         color            */
+#line 0
+LOG_ENTRY(SEVERITY,   TRACE,        (1<<__LINE__),    "[TRACE]",     LOG_COLOR_GRAY    )
+LOG_ENTRY(SEVERITY,   INFO,         (1<<__LINE__),    "[INFO ]",     LOG_COLOR_GREEN   )
+LOG_ENTRY(SEVERITY,   WARN,         (1<<__LINE__),    "[WARN ]",     LOG_COLOR_YELLOW  )
+LOG_ENTRY(SEVERITY,   ERROR,        (1<<__LINE__),    "[ERROR]",     LOG_COLOR_RED     )
+LOG_ENTRY(SEVERITY,   FATAL,        (1<<__LINE__),    "[FATAL]",     LOG_COLOR_PURPLE  )
+LOG_ENTRY(SUBSYSTEM,  PLATFORM,     (1<<__LINE__),    "[PLATF]",     LOG_COLOR_CYAN    )
+LOG_ENTRY(SUBSYSTEM,  AUDIO,        (1<<__LINE__),    "[AUDIO]",     LOG_COLOR_GREEN   )
+LOG_ENTRY(SUBSYSTEM,  VIDEO,        (1<<__LINE__),    "[VIDEO]",     LOG_COLOR_RED     )
+LOG_ENTRY(SUBSYSTEM,  NETWORK,      (1<<__LINE__),    "[NETWK]",     LOG_COLOR_PURPLE  )
+LOG_ENTRY(SUBSYSTEM,  TEST,         (1<<__LINE__),    "[TEST ]",     LOG_COLOR_GREEN   )
+LOG_ENTRY(CATEGORY,   INIT,         (1<<__LINE__),    "[INIT ]",     LOG_COLOR_GRAY    )
+LOG_ENTRY(CATEGORY,   SHUTDOWN,     (1<<__LINE__),    "[SHUTD]",     LOG_COLOR_GRAY    )
+LOG_ENTRY(CATEGORY,   ACTIVATE,     (1<<__LINE__),    "[ACTIV]",     LOG_COLOR_GRAY    )
+LOG_ENTRY(CATEGORY,   DEACTIVATE,   (1<<__LINE__),    "[DEACT]",     LOG_COLOR_GRAY    )
+/* special entry: what to display when no severity/subsystem/category is passed       */
+LOG_ENTRY(CATEGORY,   EMPTY,                    0,    "[     ]",     LOG_COLOR_GRAY    )
 #+END_SRC
 
 With this file structure, you can use the ~__LINE__~ macro to avoid manually
@@ -119,7 +115,7 @@ by defining ~LOG_USE_SHORT_NAMES_GLOBALLY~ before including ~"log.h"~
 
 #+BEGIN_SRC C :includes "log.h"
 #define LOG_ENTRY_FILE "log_entry_table.h"
-#define LOG_USE_PLAIN_ENTRY_FILE
+#define LOG_USE_DEF_FILE
 #define LOG_USE_SHORT_NAMES_GLOBALLY
 #include "log.h"
 #+END_SRC
@@ -156,6 +152,9 @@ of what the symbol names are, this can be easily mitigated.
 - If you are specifying your log entries, you have to specify its value (i.e.
   the bit that is set for it) yourself. If using a plain entry file, you can use
   the ~__LINE__~ macro to do this job for you.
+- You can only combine one severity with one subsystem and one category. E.g.,
+  ~LOG(TRACE|WARN)~ would be an invalid combination and give you an empty string
+  for the severity.
 
 * About
 This is essentially an [[https://en.wikipedia.org/wiki/X_Macro][X-Macro]] version of the [[https://github.com/MetricPanda/loggen][loggen]] library, which eliminates

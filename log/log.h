@@ -1,13 +1,14 @@
 #pragma once
-#if defined(LOG_ENTRY_FILE) && !defined(LOG_USE_PLAIN_ENTRY_FILE)
+
+#if defined(LOG_ENTRY_FILE) && !defined(LOG_USE_DEF_FILE)
   #include LOG_ENTRY_FILE
 #endif
 
 #if defined(_MSC_VER)
-  __pragma(warning(disable : 4996)) // 'localtime' is deprecated
+  __pragma(warning(disable : 4996)) /* 'localtime' is deprecated */
 #endif
 #if defined (_WIN32)
-  #undef ERROR // defined in wingdi.h as 0
+  #undef ERROR /* defined in wingdi.h as 0 */
 #endif
 
 #include <stdio.h>
@@ -42,76 +43,82 @@ extern int LOG_VARIABLE_NAME;
 enum
 {
   /* severity */
-  #define LOG_ENTRY_SEVERITY(name, value, string, color) LOG_SEVERITY_##name = value,
-  #define LOG_ENTRY_SUBSYSTEM(name, value, string, color)
-  #define LOG_ENTRY_CATEGORY(name, value, string, color)
-  #ifdef LOG_USE_PLAIN_ENTRY_FILE
+  #define SEVERITY  1
+  #define SUBSYSTEM 0
+  #define CATEGORY  0
+  #define LOG_ENTRY(entry, name, value, string, color) LOG_SEVERITY_##name = value * entry ,
+  #ifdef LOG_USE_DEF_FILE
     #include LOG_ENTRY_FILE
   #else
-    LOG_ENTRIES_SEVERITY
+    LOG_ENTRIES
   #endif
-  #undef LOG_ENTRY_SEVERITY
+  #undef LOG_ENTRY
 
-  #define LOG_ENTRY_SEVERITY(name, value, string, color) value |
-  #define LOG_SEVERITY_MASK LOG_ENTRIES_SEVERITY 0
-  #ifdef LOG_USE_PLAIN_ENTRY_FILE
+  #define LOG_ENTRY(entry, name, value, string, color) (value * entry) |
+  #define LOG_SEVERITY_MASK LOG_ENTRIES 0
+  #ifdef LOG_USE_DEF_FILE
     LOG_SEVERITY =
       #include LOG_ENTRY_FILE
     0,
   #else
     LOG_SEVERITY = LOG_SEVERITY_MASK,
   #endif
-  #undef LOG_ENTRY_SEVERITY
-  #undef LOG_ENTRY_SUBSYSTEM
-  #undef LOG_ENTRY_CATEGORY
+  #undef LOG_ENTRY
+  #undef SEVERITY
+  #undef SUBSYSTEM
+  #undef CATEGORY
 
   /* subsystems */
-  #define LOG_ENTRY_SEVERITY(name, value, string, color)
-  #define LOG_ENTRY_SUBSYSTEM(name, value, string, color) LOG_SUBSYSTEM_##name = value,
-  #define LOG_ENTRY_CATEGORY(name, value, string, color)
-  #ifdef LOG_USE_PLAIN_ENTRY_FILE
+  #define SEVERITY  0
+  #define SUBSYSTEM 1
+  #define CATEGORY  0
+  #define LOG_ENTRY(entry, name, value, string, color) LOG_SUBSYSTEM_##name = value * entry,
+  #ifdef LOG_USE_DEF_FILE
     #include LOG_ENTRY_FILE
   #else
-    LOG_ENTRIES_SUBSYSTEM
+    LOG_ENTRIES
   #endif
-  #undef LOG_ENTRY_SUBSYSTEM
+  #undef LOG_ENTRY
 
-  #define LOG_ENTRY_SUBSYSTEM(name, value, string, color) value |
-  #define LOG_SUBSYSTEM_MASK LOG_ENTRIES_SUBSYSTEM 0
-  #ifdef LOG_USE_PLAIN_ENTRY_FILE
+  #define LOG_ENTRY(entry, name, value, string, color) (value * entry) |
+  #define LOG_SUBSYSTEM_MASK LOG_ENTRIES 0
+  #ifdef LOG_USE_DEF_FILE
     LOG_SUBSYSTEMS =
       #include LOG_ENTRY_FILE
     0,
   #else
     LOG_SUBSYSTEMS = LOG_SUBSYSTEM_MASK,
   #endif
-  #undef LOG_ENTRY_SEVERITY
-  #undef LOG_ENTRY_SUBSYSTEM
-  #undef LOG_ENTRY_CATEGORY
+  #undef LOG_ENTRY
+  #undef SEVERITY
+  #undef SUBSYSTEM
+  #undef CATEGORY
 
   /* categories */
-  #define LOG_ENTRY_SEVERITY(name, value, string, color)
-  #define LOG_ENTRY_SUBSYSTEM(name, value, string, color)
-  #define LOG_ENTRY_CATEGORY(name, value, string, color) LOG_CATEGORY_##name = value,
-  #ifdef LOG_USE_PLAIN_ENTRY_FILE
+  #define SEVERITY  0
+  #define SUBSYSTEM 0
+  #define CATEGORY  1
+  #define LOG_ENTRY(entry, name, value, string, color) LOG_CATEGORY_##name = value * entry,
+  #ifdef LOG_USE_DEF_FILE
     #include LOG_ENTRY_FILE
   #else
-    LOG_ENTRIES_CATEGORY
+    LOG_ENTRIES
   #endif
-  #undef LOG_ENTRY_CATEGORY
+  #undef LOG_ENTRY
 
-  #define LOG_ENTRY_CATEGORY(name, value, string, color) value |
-  #define LOG_CATEGORY_MASK LOG_ENTRIES_CATEGORY 0
-  #ifdef LOG_USE_PLAIN_ENTRY_FILE
+  #define LOG_ENTRY(entry, name, value, string, color) (value * entry) |
+  #define LOG_CATEGORY_MASK LOG_ENTRIES 0
+  #ifdef LOG_USE_DEF_FILE
     LOG_CATEGORIES =
       #include LOG_ENTRY_FILE
     0,
   #else
     LOG_CATEGORIES = LOG_CATEGORY_MASK,
   #endif
-  #undef LOG_ENTRY_SEVERITY
-  #undef LOG_ENTRY_SUBSYSTEM
-  #undef LOG_ENTRY_CATEGORY
+  #undef LOG_ENTRY
+  #undef SEVERITY
+  #undef SUBSYSTEM
+  #undef CATEGORY
 
   /* useful masks */
   LOG_EVERYTHING       = 0x7fffffff,
@@ -129,27 +136,23 @@ enum
     time_t t = time(NULL); struct tm* time = localtime(&t);                                       \
     char buf[32]; buf[strftime(buf, sizeof(buf), LOG_TIME_FORMAT, time)] = '\0';                  \
     printf("%s" LOG_COLOR_OFF "%s%s%s %12.12s:%4i " format LOG_COLOR_OFF"\n", buf,                \
-           _log_severity_label(flags), _log_subsystem_label(flags), _log_category_label(flags), \
+           _log_label((flags) & LOG_SEVERITY),                                                    \
+           _log_label((flags) & LOG_SUBSYSTEMS),                                                  \
+           _log_label((flags) & LOG_CATEGORIES),                                                  \
            __FILE__, __LINE__, ##__VA_ARGS__);                                                    \
   }
 
-#if defined(LOG_USE_SHORT_NAMES_GLOBALLY) && defined(LOG_USE_PLAIN_ENTRY_FILE)
+#if defined(LOG_USE_SHORT_NAMES_GLOBALLY) && defined(LOG_USE_DEF_FILE)
   /* NOTE fill the global namespace with unprefixed names of log entries (e.g. TRACE instead of LOG_SEVERITY_TRACE) */
-  #define LOG_ENTRY_SEVERITY(name, value, string, color)  name = LOG_SEVERITY_##name ,
-  #define LOG_ENTRY_SUBSYSTEM(name, value, string, color) name = LOG_SUBSYSTEM_##name ,
-  #define LOG_ENTRY_CATEGORY(name, value, string, color)  name = LOG_CATEGORY_##name ,
+  #define LOG_ENTRY(entry, name, value, string, color)  name = LOG_##entry##_##name ,
   enum {
       #include LOG_ENTRY_FILE
   };
-  #undef LOG_ENTRY_SEVERITY
-  #undef LOG_ENTRY_SUBSYSTEM
-  #undef LOG_ENTRY_CATEGORY
+  #undef LOG_ENTRY
 #endif
 
-#define LOG_ENTRY_SEVERITY(name, value, string, color) name = LOG_SEVERITY_##name ,
-#define LOG_ENTRY_SUBSYSTEM(name, value, string, color) name = LOG_SUBSYSTEM_##name ,
-#define LOG_ENTRY_CATEGORY(name, value, string, color) name = LOG_CATEGORY_##name ,
-#if defined(LOG_USE_PLAIN_ENTRY_FILE)
+#define LOG_ENTRY(entry, name, value, string, color)  name = LOG_##entry##_##name ,
+#if defined(LOG_USE_DEF_FILE)
   #define LOG(flags, format, ...)          \
     {                                      \
         _LOG(flags, format, ##__VA_ARGS__) \
@@ -157,92 +160,37 @@ enum
 
   #define LOG_SET_MASK(flags) LOG_VARIABLE_NAME = flags;
 #else
-
   #define LOG_SET_MASK(flags)               \
     {                                       \
-        enum {                              \
         /* remove LOG_ prefix */            \
-        LOG_ENTRIES_SEVERITY                \
-        LOG_ENTRIES_SUBSYSTEM               \
-        LOG_ENTRIES_CATEGORY                \
-        };                                  \
-        LOG_VARIABLE_NAME = flags;         \
+        enum { LOG_ENTRIES };               \
+        LOG_VARIABLE_NAME = flags;          \
     }
 
   #define LOG(flags, format, ...)           \
     {                                       \
-        enum {                              \
         /* remove LOG_ prefix */            \
-        LOG_ENTRIES_SEVERITY                \
-        LOG_ENTRIES_SUBSYSTEM               \
-        LOG_ENTRIES_CATEGORY                \
-        };                                  \
+        enum { LOG_ENTRIES };               \
         _LOG(flags, format, ##__VA_ARGS__)  \
     }
 #endif
 /* NOTE redefined to above #define at bottom of file */
-#undef LOG_ENTRY_SEVERITY
-#undef LOG_ENTRY_SUBSYSTEM
-#undef LOG_ENTRY_CATEGORY
+#undef LOG_ENTRY
 
-#define LOG_ENTRY_SEVERITY(name, value, string, color) case LOG_SEVERITY_##name: return color string LOG_COLOR_OFF;
-#define LOG_ENTRY_SUBSYSTEM(name, value, string, color)
-#define LOG_ENTRY_CATEGORY(name, value, string, color)
-static inline const char* _log_severity_label(int flags)
+#define LOG_ENTRY(entry, name, value, string, color) case LOG_##entry##_##name: return color string LOG_COLOR_OFF;
+static const char* _log_label(int flags)
 {
-  switch (flags & LOG_SEVERITY)
+  switch (flags)
   {
-    #ifdef LOG_USE_PLAIN_ENTRY_FILE
+    #ifdef LOG_USE_DEF_FILE
       #include LOG_ENTRY_FILE
     #else
-      LOG_ENTRIES_SEVERITY
+      LOG_ENTRIES
     #endif
-    default: return "ERROR: COMBINING LOG SEVERITIES NOT SUPPORTED";
+    default: return "[     ]"; /* TODO let user pass in */
   }
 }
-#undef LOG_ENTRY_SEVERITY
-#undef LOG_ENTRY_SUBSYSTEM
-#undef LOG_ENTRY_CATEGORY
+#undef LOG_ENTRY
 
-#define LOG_ENTRY_SEVERITY(name, value, string, color)
-#define LOG_ENTRY_SUBSYSTEM(name, value, string, color) case LOG_SUBSYSTEM_##name: return color string LOG_COLOR_OFF;
-#define LOG_ENTRY_CATEGORY(name, value, string, color)
-static inline const char* _log_subsystem_label(int flags)
-{
-  switch (flags & LOG_SUBSYSTEMS)
-  {
-    #ifdef LOG_USE_PLAIN_ENTRY_FILE
-      #include LOG_ENTRY_FILE
-    #else
-      LOG_ENTRIES_SUBSYSTEM
-    #endif
-    default: return "ERROR: COMBINING LOG SUBSYSTEMS NOT SUPPORTED";
-  }
-}
-#undef LOG_ENTRY_SEVERITY
-#undef LOG_ENTRY_SUBSYSTEM
-#undef LOG_ENTRY_CATEGORY
-
-#define LOG_ENTRY_SEVERITY(name, value, string, color)
-#define LOG_ENTRY_SUBSYSTEM(name, value, string, color)
-#define LOG_ENTRY_CATEGORY(name, value, string, color) case LOG_CATEGORY_##name: return color string LOG_COLOR_OFF;
-static inline const char* _log_category_label(int flags)
-{
-  switch (flags & LOG_CATEGORIES)
-  {
-    #ifdef LOG_USE_PLAIN_ENTRY_FILE
-      #include LOG_ENTRY_FILE
-    #else
-      LOG_ENTRIES_CATEGORY
-    #endif
-    default: return "ERROR: COMBINING LOG CATEGORIES NOT SUPPORTED";
-  }
-}
-#undef LOG_ENTRY_SEVERITY
-#undef LOG_ENTRY_SUBSYSTEM
-#undef LOG_ENTRY_CATEGORY
-
-/* NOTE these #define's are used in the LOG macro, so we cannot keep them #undef'ed */
-#define LOG_ENTRY_SEVERITY(name, value, string, color)  name = LOG_SEVERITY_##name,
-#define LOG_ENTRY_SUBSYSTEM(name, value, string, color) name = LOG_SUBSYSTEM_##name,
-#define LOG_ENTRY_CATEGORY(name, value, string, color)  name = LOG_CATEGORY_##name,
+/* NOTE this #define is used in the LOG macro, so we cannot keep it #undef'ed */
+#define LOG_ENTRY(entry, name, value, string, color)  name = LOG_##entry##_##name,
