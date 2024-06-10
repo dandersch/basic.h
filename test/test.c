@@ -1,8 +1,3 @@
-#if defined(_MSC_VER)
-  __pragma(warning(disable : 4996)) // 'localtime' is deprecated (used in log.h)
-#endif
-
-#undef ERROR // defined in wingdi.h as 0
 #define LOG_USE_SHORT_NAMES_GLOBALLY
 #define LOG_USE_PLAIN_ENTRY_FILE
 #define LOG_ENTRY_FILE "log_entries.h"
@@ -47,6 +42,7 @@ const u64 MEMORY_OVERALL = MEMORY_GAME MEMORY_RENDERER + 0;
 
 int log_verbosity_level = LOG_EVERYTHING;
 
+void test_math();
 int main(int argc, char** argv)
 {
     /* TEST PLATFORM DETECTION */
@@ -173,69 +169,7 @@ int main(int argc, char** argv)
     }
 
     /* TEST MATH FUNCTIONS  */
-    {
-        v3f vec1 = {0.2f,  0.5, 0.9f};
-        v3f vec2 = {3.3f, -0.5, 0.1f};
-
-        m3f iden =
-        {
-            1.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 1.0f,
-        };
-
-        m3f mat  =
-        {
-             9.0f, 0.3f,  1.8f,
-            -0.2f, 8.0f, 20.0f,
-             3.0f, 0.0f, -1.0f,
-        };
-
-        m3f mat2 =
-        {
-             2.0f, 3.3f,  8.8f,
-             2.2f, 1.0f, -2.8f,
-             3.8f, 7.2f, -5.0f,
-        };
-
-        #if defined(LANGUAGE_CPP)
-        v3f vec3 = vec1 + vec2;
-        f32 dot  = vec1.dot(vec2);
-
-        ASSERT(iden[0][0] == 1.0f);
-        v3f from_mat = iden[2];
-        ASSERT(from_mat[0] == 0.0f);
-        ASSERT(from_mat[1] == 0.0f);
-        ASSERT(from_mat[2] == 1.0f);
-        #else
-        v3f vec3 = v3f_add(vec1, vec2);
-        f32 dot  = v3f_dot(vec1,vec2);
-        #endif
-
-        m3f iden_test = m3f_mul(mat2, m3f_inv(mat2)); // should equal identity matrix (within an EPSILON range)
-        ASSERT((iden_test.e[0][0] + EPSILON) >= iden.e[0][0] || (iden_test.e[0][0] - EPSILON) <= iden.e[0][0]);
-        ASSERT((iden_test.e[1][1] + EPSILON) >= iden.e[1][1] || (iden_test.e[1][1] - EPSILON) <= iden.e[1][1]);
-        ASSERT((iden_test.e[2][2] + EPSILON) >= iden.e[2][2] || (iden_test.e[2][2] - EPSILON) <= iden.e[2][2]);
-        ASSERT((iden_test.e[0][1] + EPSILON) >= iden.e[0][1] || (iden_test.e[0][1] - EPSILON) <= iden.e[0][1]);
-
-        ASSERT(vec3.x == 3.5f);
-        ASSERT(vec3.y == 0.0f);
-        ASSERT(vec3.z == 1.0f);
-
-        ASSERT(lerp(0, 0.25, 1)      == 0.25);
-        ASSERT(lerp(200, 0.5, 300)   == 250);
-        ASSERT(unlerp(100, 125, 150) == unlerp(0.5, 0.75, 1.0));
-        ASSERT(linear_remap(125, 100, 150, 0.5 , 1.0) == 0.75);
-
-        ASSERT(2.8f == CLAMP(vec3.z,  2.8f, vec3.x));
-        ASSERT(3.5f == CLAMP(vec3.z,  3.7f, vec3.x));
-        ASSERT(1.0f == CLAMP(vec3.z, -0.7f, vec3.x));
-
-        ASSERT(120   == MAX(  120,  90));
-        ASSERT(-0.3f == MIN(-0.3f, 1.0f));
-
-        /* TODO implement and test further math functions */
-    }
+    test_math();
 
     /* TEST THREAD STUFF */
     {
@@ -485,4 +419,88 @@ int main(int argc, char** argv)
     }
 
     return 0;
+}
+
+/* NOTE: C++20 error if math.h is included  */
+#define HANDMADE_MATH_PROVIDE_MATH_FUNCTIONS
+#define HMM_SINF  sinf
+#define HMM_COSF  cosf
+#define HMM_TANF  tanf
+#define HMM_SQRTF sqrtf
+#define HMM_ACOSF acosf
+#include "ext/HandmadeMath.h"
+void test_math() {
+    /* helper macros */
+    #define VEC_EQUAL(v,hmm) ((v.x == hmm.X) && (v.y == hmm.Y) && (v.z == hmm.Z))
+
+    v3f vec1          = {0.2f,  0.5, 0.9f};
+    HMM_Vec3 hmm_vec1 = {0.2f,  0.5, 0.9f};
+    v3f vec2          = {3.3f, -0.5, 0.1f};
+    HMM_Vec3 hmm_vec2 = {3.3f, -0.5, 0.1f};
+
+    ASSERT(VEC_EQUAL(vec1, hmm_vec1));
+    ASSERT(VEC_EQUAL(vec2, hmm_vec2));
+
+    m3f iden =
+    {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+    };
+
+    m3f mat  =
+    {
+         9.0f, 0.3f,  1.8f,
+        -0.2f, 8.0f, 20.0f,
+         3.0f, 0.0f, -1.0f,
+    };
+
+    m3f mat2 =
+    {
+         2.0f, 3.3f,  8.8f,
+         2.2f, 1.0f, -2.8f,
+         3.8f, 7.2f, -5.0f,
+    };
+
+    #if defined(LANGUAGE_CPP)
+    v3f vec3 = vec1 + vec2;
+    f32 dot  = vec1.dot(vec2);
+
+    ASSERT(iden[0][0] == 1.0f);
+    v3f from_mat = iden[2];
+    ASSERT(from_mat[0] == 0.0f);
+    ASSERT(from_mat[1] == 0.0f);
+    ASSERT(from_mat[2] == 1.0f);
+    #else
+    v3f vec3 = v3f_add(vec1, vec2);
+    f32 dot  = v3f_dot(vec1,vec2);
+    #endif
+
+    HMM_Vec3 hmm_vec3 = HMM_AddV3(hmm_vec1, hmm_vec2);
+    ASSERT(VEC_EQUAL(vec3, hmm_vec3));
+    ASSERT(dot == HMM_DotV3(hmm_vec1, hmm_vec2));
+
+    m3f iden_test = m3f_mul(mat2, m3f_inv(mat2)); // should equal identity matrix (within an EPSILON range)
+    ASSERT((iden_test.e[0][0] + EPSILON) >= iden.e[0][0] || (iden_test.e[0][0] - EPSILON) <= iden.e[0][0]);
+    ASSERT((iden_test.e[1][1] + EPSILON) >= iden.e[1][1] || (iden_test.e[1][1] - EPSILON) <= iden.e[1][1]);
+    ASSERT((iden_test.e[2][2] + EPSILON) >= iden.e[2][2] || (iden_test.e[2][2] - EPSILON) <= iden.e[2][2]);
+    ASSERT((iden_test.e[0][1] + EPSILON) >= iden.e[0][1] || (iden_test.e[0][1] - EPSILON) <= iden.e[0][1]);
+
+    ASSERT(vec3.x == 3.5f);
+    ASSERT(vec3.y == 0.0f);
+    ASSERT(vec3.z == 1.0f);
+
+    ASSERT(lerp(0, 0.25, 1)      == 0.25);
+    ASSERT(lerp(200, 0.5, 300)   == 250);
+    ASSERT(unlerp(100, 125, 150) == unlerp(0.5, 0.75, 1.0));
+    ASSERT(linear_remap(125, 100, 150, 0.5 , 1.0) == 0.75);
+
+    ASSERT(2.8f == CLAMP(vec3.z,  2.8f, vec3.x));
+    ASSERT(3.5f == CLAMP(vec3.z,  3.7f, vec3.x));
+    ASSERT(1.0f == CLAMP(vec3.z, -0.7f, vec3.x));
+
+    ASSERT(120   == MAX(  120,  90));
+    ASSERT(-0.3f == MIN(-0.3f, 1.0f));
+
+    /* TODO implement and test further math functions */
 }

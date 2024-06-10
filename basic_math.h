@@ -199,7 +199,7 @@ inline static m3f m3f_inv(m3f mat)
     inline m3f m3f::inverse()              { return m3f_inv(*this); }
 #endif
 
-#include <stdio.h> // TODO move this somewhere else
+#include <stdio.h> // TODO can be a macro
 inline static void m3f_print(m3f mat)
 {
     for (u32 i = 0; i < 3; i++)
@@ -243,4 +243,10 @@ inline static f32 linear_remap(f32 val, f32 a_min, f32 a_max, f32 b_min, f32 b_m
 // f32 signf(f32 val)
 // f32 ceil(f32 val)
 // f32 floor(f32 val)
-// sqrt, sin, cos, tan, atan, ln
+
+/* TODO sqrt, sin, cos, tan, atan, ln */
+inline float sinf(float f)  { UNIMPLEMENTED; return 0; }
+inline float cosf(float f)  { UNIMPLEMENTED; return 0; }
+inline float tanf(float f)  { UNIMPLEMENTED; return 0; }
+inline float sqrtf(float f) { UNIMPLEMENTED; return 0; }
+inline float acosf(float f) { UNIMPLEMENTED; return 0; }

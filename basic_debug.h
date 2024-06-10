@@ -37,7 +37,9 @@
     }
 
     // TODO try to use __builtin_unreachable
-    #define UNREACHABLE(msg, ...) { fprintf(stderr,msg,##__VA_ARGS__); ASSERT(0); }
+    #define UNREACHABLE(msg, ...) do { fprintf(stderr,msg,##__VA_ARGS__); ASSERT(0); } while (0)
+
+    #define UNIMPLEMENTED UNREACHABLE("Call to unimplemented function %s", __FUNCTION__)
 
 #else
     #define ASSERT(expr)          (void)0
@@ -45,20 +47,18 @@
 #endif
 
 /*
- * macro for unimplemented functions. Usage:
- * UNIMPLEMENTED int my_func() { }
- *
- * TODO untested
+ * TODO
+ * compile-time macro for functions that aren't finished. Usage: TODO int my_func() { }
  */
 #if defined(LANGUAGE_CPP)
   // works with GCC, G++, CLANG++, MSVC++, CLANG++.exe
-  #define UNIMPLEMENTED [[deprecated("not implemented")]]
+  #define TODO [[deprecated("not implemented")]]
 #elif defined(LANGUAGE_C) && !defined(COMPILER_MSVC)
   // works with GCC, G++, CLANG++, CLANG, CLANG.exe, CLANG++.exe
-  #define UNIMPLEMENTED __attribute__((error("not implemented")))
+  #define TODO __attribute__((error("not implemented")))
 #else
   // no equivalent when compiling ".c" files with msvc
-  #define UNIMPLEMENTED WARNING("no UNIMPLEMENTED macro available")
+  #define TODO WARNING("no UNIMPLEMENTED macro available")
 #endif
 
 /* static_assert */
