@@ -29,7 +29,10 @@
 #include "basic_math.h"      // depends on basic_platform.h
 
 
-#include "basic_memory.h"    // standalone
+#ifdef BASIC_IMPLEMENTATION
+  #define MEMORY_IMPLEMENTATION
+#endif
+#include "memory/memory.h"    // standalone
 
 
 //#define MEM_ARENA_OS_ALLOC(size) mem_alloc(size)

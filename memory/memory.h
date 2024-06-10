@@ -44,7 +44,7 @@ size_t mem_pagesize(); /* pagesize in bytes */
 //#define ALIGN_TO_NEXT_PAGE(val) NEXT_ALIGN_POW2((uintptr_t) val, 4096)
 //#define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, 4096)
 
-#ifdef BASIC_IMPLEMENTATION
+#ifdef MEMORY_IMPLEMENTATION
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -172,4 +172,4 @@ size_t  mem_pagesize() {
     return sysconf(_SC_PAGE_SIZE);
 }
 #endif
-#endif // BASIC_IMPLEMENTATION
+#endif // MEMORY_IMPLEMENTATION
