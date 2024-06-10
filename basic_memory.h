@@ -1,11 +1,5 @@
 #pragma once
 
-#if !defined(COMPILER_MSVC) && !defined(COMPILER_TCC)
-    #define OFFSET_OF(type, member) __builtin_offsetof(type, member)
-#else
-    #define OFFSET_OF(s,m) ((size_t)&(((s*)0)->m))
-#endif
-
 #define KILOBYTES(val) (         (val) * 1024LL)
 #define MEGABYTES(val) (KILOBYTES(val) * 1024LL)
 #define GIGABYTES(val) (MEGABYTES(val) * 1024LL)
@@ -23,19 +17,6 @@
 //#define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, mem_pagesize())
 #define ALIGN_TO_NEXT_PAGE(val) NEXT_ALIGN_POW2((uintptr_t) val, 4096)
 #define ALIGN_TO_PREV_PAGE(val) PREV_ALIGN_POW2((uintptr_t) val, 4096)
-
-
-/* TYPE_OF macro for all compilers except MSVC in C-mode */
-#if defined(LANGUAGE_CPP)
-  #define TYPE_OF(e) decltype(e)
-#elif !defined(COMPILER_MSVC)
-  /* NOTE: non standard gcc extension, but works everywhere except MSVC w/ C */
-  #define TYPE_OF(e) __typeof__(e)
-#else
-  #undef TYPE_OF
-  #define TYPE_OF(e) STATIC_ASSERT(0, "TYPE_OF macro doesn't work w/ MSVC in C");
-#endif
-
 
 /* see
    http://www.smallbulb.net/2018/809-reserve-virtual-memory
@@ -55,10 +36,10 @@ u64   mem_pagesize(); /* pagesize in bytes */
 
 /* helper macros */
 #define MEM_ZERO_OUT_STRUCT(s) mem_zero_out((s), sizeof(*(s)))
-#define MEM_ZERO_OUT_ARRAY(a)  mem_zero_out((a), sizeof(a)) // TODO check if a is real array
+#define MEM_ZERO_OUT_ARRAY(a)  ASSERT(IS_ARRAY(a)); mem_zero_out((a), sizeof(a))
 
 #ifdef BASIC_IMPLEMENTATION
-#if defined(PLATFORM_WIN32)
+#if defined(_WIN32)
   #include <windows.h>
   void* mem_reserve(void* at, u64 size)
   {
@@ -109,7 +90,7 @@ u64   mem_pagesize(); /* pagesize in bytes */
       GetSystemInfo(&si);
       return si.dwPageSize;
   }
-#elif defined(PLATFORM_LINUX) || defined(PLATFORM_MACOS)
+#elif defined(__linux__)
   #include <stdlib.h>   /* for malloc */
   #include <string.h>   /* for memset, memcpy, memcmp */
   #include <sys/mman.h> /* for mmmap, mprotect, madvise */
@@ -192,5 +173,3 @@ u64   mem_pagesize(); /* pagesize in bytes */
   }
 #endif
 #endif // BASIC_IMPLEMENTATION
-
-/* TODO FILE OPERATIONS  */

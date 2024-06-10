@@ -231,6 +231,9 @@ int main(int argc, char** argv)
         char* decayed_array = real_array;
         ASSERT(ARRAY_COUNT(real_array) == 8);
 
+        MEM_ZERO_OUT_ARRAY(real_array);
+        // MEM_ZERO_OUT_ARRAY(decayed_array); // should fail
+
         PUSH_WARNINGS()
         WARNING_TO_IGNORE("-Wsizeof-pointer-div", 6384)
         //DO_PRAGMA(warning(disable : 6384))

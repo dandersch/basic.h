@@ -32,12 +32,16 @@
  * - DEPRECATED: for declaring functions deprecated (TODO)
  * - STATIC_ASSERT(expr,msg): portable static_assert
  * - debug_running_under_debugger(): runtime debugger detection
+ *
+ * - OFFSET_OF(type,member): portable offsetof()
+ * - TYPE_OF(e): portable typeof()/decltype() (except MSVC in C-mode)
+ * - ARRAY_COUNT(arr) : returns count of elements in array and 0 for pointers (decayed arrays)
  */
 
 /* os detection */
 #if defined(_WIN32)
     #define PLATFORM_WIN32
-#elif defined(__gnu_linux__) || defined(__linux__)
+#elif defined(__linux__) // || defined(__gnu_linux__)
     #define PLATFORM_LINUX
 #elif defined(__APPLE__) && defined(__MACH__)
     #define PLATFORM_MACOS // NOTE: untested
@@ -482,3 +486,30 @@ else                                                                      \
     /* NOTE we assume we don't run under a debugger when not built with debug information */
     static int debug_running_under_debugger() { return 0; }
 #endif
+
+/* memory macros */
+
+/* OFFSET_OF for struct members */
+#if !defined(COMPILER_MSVC) && !defined(COMPILER_TCC)
+    #define OFFSET_OF(type, member) __builtin_offsetof(type, member)
+#else
+    #define OFFSET_OF(s,m) ((size_t)&(((s*)0)->m))
+#endif
+
+/* TYPE_OF macro for all compilers except MSVC in C-mode */
+#if defined(LANGUAGE_CPP)
+  #define TYPE_OF(e) decltype(e)
+#elif !defined(COMPILER_MSVC)
+  /* NOTE: non standard gcc extension, but works everywhere except MSVC w/ C */
+  #define TYPE_OF(e) __typeof__(e)
+#else
+  #undef TYPE_OF
+  #define TYPE_OF(e) STATIC_ASSERT(0, "TYPE_OF macro doesn't work w/ MSVC in C-mode");
+#endif
+
+/* macros to check if array is real array (and not just a pointer, i.e. decayed array) */
+#define IS_INDEXABLE(arg) (sizeof(arg[0]))
+#define IS_ARRAY(arg) (IS_INDEXABLE(arg) && (((void *) &arg) == ((void *) arg)))
+
+/* shouldn't work for decayed arrays */
+#define ARRAY_COUNT(arr) (IS_ARRAY(arr) ? (sizeof(arr)/sizeof(arr[0])) : 0)

@@ -1,18 +1,10 @@
 #pragma once
 
 /* define common, useful macros such as
- *    ARRAY_COUNT(arr) : returns count of elements in array and 0 for pointers
  *    scoped_begin_end(start, end) : runs start at begin and end at end of the following scope
  *    scoped_defer(...) : runs all given expressions at the end of the following scope in the order given
  *    defer(...) : runs given code at end of the scope (only available in C++11 and up)
  */
-
-/* macros to check if array is real array (and not just a pointer, i.e. decayed array) */
-#define IS_INDEXABLE(arg) (sizeof(arg[0]))
-#define IS_ARRAY(arg) (IS_INDEXABLE(arg) && (((void *) &arg) == ((void *) arg)))
-
-/* shouldn't work for decayed arrays */
-#define ARRAY_COUNT(arr) (IS_ARRAY(arr) ? (sizeof(arr)/sizeof(arr[0])) : 0)
 
 /* helper macros */
 #define TOKEN_PASTE(a, b) a##b

@@ -29,9 +29,9 @@
 #include "basic_types.h"     // maybe merge
 #include "basic_math.h"      // these two
 
-#include "basic_memory.h"
-#include "basic_arena.h"
-#include "basic_dynarr.h"
+#include "basic_memory.h"    // standalone
+#include "basic_arena.h"     // depends on basic_memory.h
+#include "basic_dynarr.h"    // depends on basic_memory.h
 
 /* standalones: these do not depend on other headers */
 #include "basic_macro.h"
