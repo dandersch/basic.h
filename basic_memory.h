@@ -10,12 +10,12 @@
 #include <stddef.h> // for size_t
 
 /* memory is guaranteed to be initialized to zero */
-void*  mem_reserve (void* at, size_t size);     /* pass NULL if memory location doesn't matter */
+void*  mem_reserve (void* at,    size_t size);  /* pass NULL if memory location doesn't matter */
 int    mem_commit  (void* ptr,   size_t size);
-void*  mem_alloc   (size_t size);               /* reserve & commit  */
+void*  mem_alloc   (size_t size);               /* reserve & commit TODO maybe this should just call malloc() */
 int    mem_decommit(void* ptr,   size_t size);
 void   mem_release (void* ptr,   size_t size);
-void   mem_free    (void* ptr,   size_t size);  /* decommit & release */
+void   mem_free    (void* ptr,   size_t size);  /* decommit & release TODO maybe this should just call free() */
 void   mem_zero_out(void* ptr,   size_t size);
 int    mem_equal   (void* buf_a, void* buf_b, size_t size_in_bytes);
 void   mem_copy    (void* dst,   void* src,   size_t size_in_bytes);
@@ -102,7 +102,8 @@ size_t  mem_pagesize() {
  * void* buf=malloc w/ subsequent calls to munmap(buf) or calls to buf = mmap
  * with subsequent calls to free(buf).
  *
- * Maybe we just use malloc() in mem_alloc() and leave it to the user to not mix
+ * Maybe we just use malloc() in mem_alloc() and leave it to the user to not
+ * decommit malloc'ed memory or free() reserved memory
  *
  * TODO Is there a way to check if memory was allocated by malloc?
  *

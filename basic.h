@@ -26,11 +26,26 @@
 
 #include "basic_buildtype.h" // depends on basic_platform.h  TODO maybe rename to basic_build.h
 
-#include "basic_types.h"     // maybe merge
-#include "basic_math.h"      // these two
+#include "basic_math.h"      // depends on basic_platform.h
+
 
 #include "basic_memory.h"    // standalone
-#include "basic_arena.h"     // depends on basic_memory.h
+
+
+//#define MEM_ARENA_OS_ALLOC(size) mem_alloc(size)
+//#define MEM_ARENA_OS_FREE(ptr) mem_free(size)
+#define MEM_ARENA_OS_RESERVE(size)      mem_reserve(NULL, size)
+#define MEM_ARENA_OS_COMMIT(ptr,size)   mem_commit(ptr, size)
+#define MEM_ARENA_OS_RELEASE(ptr,size)  mem_release(ptr, size)
+#define MEM_ARENA_OS_DECOMMIT(ptr,size) mem_decommit(ptr, size)
+
+#ifdef BASIC_IMPLEMENTATION
+  #define MEM_ARENA_IMPLEMENTATION
+#endif
+
+#include "basic_arena.h"     // standalone
+
+
 #include "basic_dynarr.h"    // depends on basic_memory.h
 
 /* standalones: these do not depend on other headers */
