@@ -6,7 +6,7 @@
 [subrepo]
 	remote = git@github.com:dandersch/platform.h.git
 	branch = main
-	commit = 0e57af597df0a00d54a7091e4f12100227815444
-	parent = c8ccf914530b85d83e32e0a41ec3d0fd9197724d
+	commit = d475bd2db33091457fa11f3b24cf8ba72fa62c34
+	parent = e0551593596ef6bde245abe3fe87bfc06340cf04
 	method = merge
 	cmdver = 0.4.6
